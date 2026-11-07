@@ -1,0 +1,12 @@
+{
+    "name":  "UnityMcp.Editor",
+    "rootNamespace":  "UnityMcp.Editor",
+    "includePlatforms":  [
+                             "Editor"
+                         ],
+    "autoReferenced":  true,
+    "references":  [
+                       "UnityEngine.UI",
+                       "Unity.TextMeshPro"
+                   ]
+}

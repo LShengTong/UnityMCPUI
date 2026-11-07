@@ -1,0 +1,64 @@
+# Python environments and bytecode
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Python build, test and tool output
+/build/
+/dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Local validation projects, screenshots and compiled test artifacts
+/.validation/
+
+# Unity-generated project data (keep Packages, ProjectSettings and .meta files)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+/Builds/
+
+# IDE settings and generated solution files
+.idea/
+.vscode/
+.vs/
+*.csproj
+*.sln
+*.slnx
+*.unityproj
+*.pidb
+*.suo
+*.user
+*.userprefs
+*.booproj
+
+# Local secrets; allow distributable environment templates
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Temporary files and OS metadata
+*.log
+*.tmp
+*.bak
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
