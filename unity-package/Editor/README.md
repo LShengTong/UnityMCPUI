@@ -1,72 +1,66 @@
-# Unity Editor HTTP 桥接
+# Unity Editor 桥接
 
-EditorServerLifecycle.cs 启动 127.0.0.1 动态端口监听，公布连接信息到
-Library/UnityMcp/bridge.json。该文件只用于发现，不用于传递操作请求。
+这是 Unity MCP 的 Editor-only UPM 包代码。安装和客户端配置见[项目说明](../../README.md)。
 
-使用前通过 Package Manager 的 Add package from disk 选择上级 package.json。
-等待编译完成并保持 Editor 打开。目标项目需要 uGUI 2.0.0。
+## 启动与停止
 
-GET /health 返回实例身份，不暴露 Ready；GET /project/info 返回 Editor 项目基本信息；POST /ui/prefabs 接收创建请求。
-请求需要 Authorization: Bearer <token>，不接受浏览器 Origin 请求。
-后台线程只处理网络，UI 创建经内存队列交给 Editor 主线程。
-域重载或退出时关闭监听；Python 需重新 connect_project。
+EditorServerLifecycle 通过 InitializeOnLoad 注册 Editor 更新、程序集重载和退出事件。启动时依次创建任务队列、请求处理器和监听器，订阅 ContextReceived，再打开端口并发布发现文件。
 
-UiPrefabBridge.cs 负责构建和保存 uGUI Canvas Prefab。
-支持 panel、image、text、button 和横纵布局；文本使用 TMP，需要默认字体或 font_path。
-不覆盖已有资产，不添加按钮业务回调，不向目标场景添加 EventSystem。
+EditorPortListener 仅监听127.0.0.1动态端口，后台接收 HTTP 请求。EditorDiscoveryFile 将 port、token 原子发布到目标项目的 Library/UnityMcp/bridge.json。该文件不传递操作请求。
 
-当前 HTTP 改动尚未完成编译与运行验证。
+EditorInstanceInfo 保存协议常量、当前桥接生命周期的 InstanceId 和 Token。程序集重载或退出时退订事件、取消排队任务、关闭监听并清理属于本实例的发现文件；Python 需重新连接。
 
-Ready 仅在 Unity 内部使用：未就绪时保留排队请求，就绪后执行；未就绪时 HTTP 等待超时会标记取消，恢复就绪后由队列清理。Python 无需预先请求 health。所有 HTTP 响应携带 X-Unity-Instance，创建响应也包含 instance_id。
+## 请求与主线程执行
 
-代码职责：
-- EditorServerLifecycle.cs：注册 Editor 事件、启动与停止服务、发布和清理发现文件。
-- EditorInstanceInfo.cs：仅保留协议常量，以及类内初始化的只读 InstanceId 和 Token，不保存项目路径或 Unity 版本。
-- UiPrefabBridge.cs：实际构建和保存 uGUI Prefab。
+EditorHttpRequestHandler 检查 Bearer Token，拒绝带 Origin 的请求，然后按路径分发。
 
-- EditorPortListener.cs：尝试选择并绑定回环端口、后台接收循环、ContextReceived 事件以及关闭监听；由生命周期类持有和调用。
+- /health、/project/info：返回 Operation 在主线程初始化时捕获的快照，不入队。
+- 其他接口：对应 Handler 读取并解析 JSON，检查请求 ID、截止时间和基础参数，再调用 EditorTaskQueue.EnqueueAndRespond。
+- EditorTaskQueue.Pending 保存 Func<string> 执行委托和完成结果。容量32，每次主线程 Update 最多执行一个任务；编译、资源更新或 Play 模式期间暂停。
+- 队列等待结果超时20秒；取消不能证明已经开始的操作没有完成。EditorHttpResponse 统一返回 JSON 和 X-Unity-Instance 标头。
+- 请求体默认上限256 KiB，图片导入单独允许12 MiB传输体（源图片仍限制8 MiB）。
 
-- Http/EditorHttpRequestHandler.cs：请求认证、接口路由、读取请求体、等待任务结果和发送响应。
+## 当前路由
 
-- EditorTaskQueue.cs：任务类型、线程安全队列、容量预留和原子计数、取消任务清理及停止时取消；停止后不再接收入队。
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | /health | 实例快照 |
+| GET | /project/info | 项目信息及握手 |
+| POST | /ui/assets/find | 统一批量搜索资源 |
+| POST | /ui/assets/inspect | 统一批量读取资源详情 |
+| POST | /ui/prefabs | 创建新 Prefab |
+| POST | /ui/prefabs/batch | 批量编辑已有 Prefab |
+| POST | /ui/prefabs/preview | PNG 预览 |
+| POST | /ui/images/import | 图片导入为 Sprite |
+| POST | /ui/backups/list | 查询备份 |
+| POST | /ui/backups/restore | 原地恢复 |
 
+## 目录职责
 
-发现文件的 Descriptor 与文件操作在 EditorDiscoveryFile；项目信息和 health 的响应结构与序列化在 EditorHttpRequestHandler。路径和版本在使用处读取；HTTP 响应 JSON 仍在主线程构造时生成，供后台安全返回。
+| 位置 | 职责 |
+| --- | --- |
+| Handler/ | HTTP 请求解析、基础校验和入队 |
+| Requests/ | 可序列化请求数据 |
+| Operations/ | 具体操作和批量调度，不依赖 HttpListenerContext |
+| AssetQueries/ | enum、字符串/enum/Query 注册表、共用搜索与各分类回复 |
+| PrefabUtils/ | 构建、锚点、定位、编辑生命周期、安全保存、版本及备份 |
 
-- EditorDiscoveryFile.cs：写入仅含 port、token 的发现文件，替换发布，并按 token 校验归属后删除。实例 ID、项目路径和协议通过 HTTP 握手取得。
+资源查询统一支持 ui_prefab、sprite、tmp_font。UiAssetQueryRegistry 的三列表管理字符串、enum 和 Query 的对应关系，各分类负责 Matches、专属检查与详情回复。Prefab 层级/版本在 results[i].prefab 中。
 
-ContextReceived 在后台线程触发，EditorServerLifecycle 订阅事件后异步调用 handler；不阻塞接收循环。关闭服务时退订事件，关闭监听会解除 GetContextAsync 等待。每个 context 应只有一个负责响应的订阅者。
+## Prefab 编辑与保存
 
-监听启动顺序：创建任务队列与请求处理器 → 创建监听并订阅 ContextReceived → Open 绑定端口并自动启动接收循环 → 发布发现文件。不再单独调用 StartReceiving。
+BatchEditUiPrefabOperation 先解析全部已有节点引用，再按顺序调度 modify、add、delete、move、add_component。新节点本批不能通过路径引用。
 
-HTTP 协调逻辑已合并到 EditorServerLifecycle：接收事件后调用 handler、在主线程就绪时调度 tasks.Update()，关闭时退订事件并取消任务。
+UiPrefabEditScope 管理版本检查、隔离加载、保存前备份、保存及卸载。UiPrefabSaveUtility 在不激活根节点的情况下保存，再恢复持久化资源的激活状态和目标缩放，避免屏幕空间 Canvas 将隔离场景中的驱动缩放写入资源。创建和编辑共用此保存逻辑。
 
-生命周期类直接订阅 handler.OnContextReceived；事件入口、异步处理及异常收尾均由 EditorHttpRequestHandler 管理。
+UiRectTransformUtility 共用16种锚点预设。可选 offset 通过显式 has_offset_min/has_offset_max 传输标记判断是否应用，避免 JsonUtility 将缺省嵌套对象误当成用户指定值；这些内部标记由 Python 生成。
 
-就绪判断现由 EditorTaskQueue.Update() 内部负责；生命周期只在服务未停止时调用 tasks.Update()，不再以端口是否监听作为任务调度条件。
+UiPrefabBackupStore 将原 Prefab 快照及元数据放在 Library/UnityMcp/Backups。恢复只替换原文件，不改 .meta/GUID，恢复前再次备份；依赖资源不会回退。清理 Library 会丢失备份。
 
-各 HTTP 接口已独立：
-- Http/CreateUiPrefabRequestHandler.cs：POST /ui/prefabs 的请求读取、入队和结果等待。
-- Http/EditorHttpRequestHandler.cs：统一认证、路由和异常收尾。
+## 预览和限制
 
-接收处理与实际操作：
-- Handler/：认证、路由、请求解析与校验，选择立即响应或放入队列。
-- Operations/：具体操作方法。HealthOperation、ProjectInfoOperation 在主线程生成快照，接收时立即返回；CreateUiPrefabOperation 由队列在主线程执行。
-- EditorTaskQueue.Pending 保存 Func<string> 执行委托，不保存请求 JSON，也不依赖 Prefab 类型。
-- 队列仅检查就绪状态、管理容量与取消，并调用 job.Execute()、完成或失败通知。
-- 创建请求入队前校验请求 ID 和截止时间，执行前再次检查是否过期；实际层级构建仍在 UiPrefabBridge。
-本轮仅修改代码，未运行验证。
+PreviewUiPrefabOperation 使用 PreviewRenderUtility 的 Game 类型相机，隔离实例化后更新 Canvas、布局和 TMP，再读回 PNG，最后释放临时资源。无 Canvas 子 Prefab 使用临时 Canvas；根世界空间 Canvas 暂不支持。
 
-统一接收流程：
-- Handler/CreateUiPrefabRequestHandler.cs：仅保留 UI 请求解析与参数校验，将实际 Execute 委托交给通用流程。
-- 立即查询由路由直接调用 HealthOperation.Execute() / ProjectInfoOperation.Execute()；Operation 在主线程构造快照，后台 Execute 不访问 Unity API。
-本轮未运行验证。
+插件不执行任意 C#，组件添加限白名单，不生成业务脚本、按钮回调或场景 EventSystem。预览实例化仍可能运行项目自带的 ExecuteAlways/OnValidate 脚本，不等于完整游戏运行模拟。
 
-
-UI 请求在 CreateUiPrefabRequestHandler.Handle 内直接读取、解析和校验，成功后调用 queued.Handle(context, request, CreateUiPrefabOperation.Execute)。队列接收已解析参数，不再接收解析委托或定义解析异常。容量限制从解析后开始；读取阶段仍有单请求大小及超时限制。创建操作执行前再次检查截止时间。
-
-排队与响应流程已统一到 EditorTaskQueue.EnqueueAndRespond(context, execute)：
-预留名额、入队、等待、超时取消、释放名额及发送响应均由队列负责。
-CreateUiPrefabRequestHandler 只读取和校验，再传入实际 Operation 执行委托。
-EditorHttpResponse.cs 在 Editor 根目录封装 HTTP 发送，由队列及立即处理入口共用；不属于业务 Operations。
-当前队列明确承担 HTTP 响应职责，实际操作仍不依赖 HttpListenerContext。本轮未运行验证。
+Unity 实测范围随版本推进而变化；基础连接脚本不覆盖所有接口，功能变动后应针对目标 Editor、渲染管线和资源进行联调。
