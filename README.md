@@ -211,7 +211,7 @@ skill 与仓库一起分发，不代表客户端自动加载；需要按客户�
 
 ```text
 Agent → MCP stdio → Python EditorConnection → 本机 HTTP
-      → Unity Handler → 主线程队列 → Operation → Unity API
+      → Unity Handler.Handle → 主线程队列 → Handler.Execute → Unity API
 ```
 
 - Unity 仅监听 `127.0.0.1` 动态端口，通过 `Library/UnityMcp/bridge.json` 公布 port、token。
@@ -230,17 +230,33 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 | `src/unity_mcp/ui_schema.py` | UI 创建和批量操作参数 |
 | `src/unity_mcp/asset_schema.py` | 资源查询类型 enum 与参数 |
 | `src/unity_mcp/image_import.py` | 本地图片读取和格式检查 |
-| `unity-package/Editor/Handler/` | HTTP 路由、解析与入队 |
-| `unity-package/Editor/Operations/` | 实际操作与批量调度 |
-| `unity-package/Editor/Requests/` | Unity 请求数据结构 |
+| `unity-package/Editor/Handlers/` | 各请求类型对应的 Handler |
+| `unity-package/Editor/Server/` | Editor 服务生命周期、监听器、发现文件、实例信息和主线程任务队列 |
+| `unity-package/Editor/Handlers/Base/` | HTTP 鉴权与分发入口、请求接口、通用解析、请求体读取和序列化工具 |
+| `protocol/` | 全部 JSON 请求、查询参数、批量动作及共用节点的 JSON Schema |
+| `src/unity_mcp/generated/` | 生成的 Python 协议模型 |
+| `unity-package/Editor/Protocol/Generated/` | 生成的全部 C# 请求、动作和共用数据类型及基础校验 |
+| `unity-package/Editor/Handlers/Base/PrefabUtils/` | 多个 Handler 共用的节点构建、布局、保存和备份工具 |
+| `unity-package/Editor/Handlers/TypeHandlers/CreateUiPrefabRequestHandler.cs` | 创建 Handler，引用生成的协议类型 |
+| `unity-package/Editor/Handlers/TypeHandlers/BatchEditUiPrefab/` | 批量编辑 Handler、编辑生命周期、节点工具及 Operations 子操作；参数引用生成的协议类型 |
 | `unity-package/Editor/AssetQueries/` | 类型注册表及各资源分类的检测、校验和回复 |
-| `unity-package/Editor/PrefabUtils/` | 节点构建、锚点、隔离编辑、安全保存、版本及备份 |
+| `unity-package/Editor/AssetQueries/Base/` | 查询基类、共用搜索、查询结果结构及资源查询工具 |
+| `unity-package/Editor/AssetQueries/TypeQueries/` | 各资源类型的查询实现 |
+| `unity-package/Editor/UiPrefabVersion.cs` | Handler 与资源查询共用的 Prefab 版本工具 |
 | `skills/unity-ui/` | Agent 的 UI 操作指引与示例 |
 | `scripts/check_mcp.py` | 基础 MCP 连接流程检查 |
 
-Unity 桥接内部说明见 [Editor/README.md](unity-package/Editor/README.md)。
+所有 JSON 请求的字段、默认值和基础约束统一维护在 `protocol/*.schema.json`，生成 Python 与 C# 类型及校验；树结构、资源操作等业务校验继续手写。health/project-info 没有请求体。协议约定见 [Protocol README](protocol/README.md)，新增接口、资源类型和编辑动作的步骤见 [Editor 扩展说明](unity-package/Editor/README.md#新增功能方法)。
 
 ## 检查与验证范围
+
+修改协议后，一键生成两端代码、检查生成文件并运行协议测试，任一步失败即停止：
+
+```powershell
+.\.venv\Scripts\python.exe scripts/update_protocol.py
+```
+
+生成文件随协议一起提交，不要手改。通过后等待 Unity 编译完成，重连 MCP 刷新参数，并验证真实请求的成功、失败及保存行为。
 
 基础 MCP 连接检查，默认使用临时项目和 HTTP 模拟服务：
 

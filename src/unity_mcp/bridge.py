@@ -12,6 +12,12 @@ from pathlib import Path, PurePosixPath
 
 import httpx
 from .image_import import read_image
+from .generated.requests import CreateUiPrefabRequest, REQUEST_MODELS, prepare_ui_node as _prepare_ui_node
+from .ui_schema import (
+    UiPrefabSpec, UiNodeAddition, UiNodeDeletion, UiNodeMove,
+    UiPropertyModification, UiComponentAddition,
+)
+from .asset_schema import UiAssetInspection
 
 
 def asset_path(project: Path, value: str, suffix: str | None = None) -> str:
@@ -25,18 +31,6 @@ def asset_path(project: Path, value: str, suffix: str | None = None) -> str:
     if not (project / value).resolve().is_relative_to((project / "Assets").resolve()):
         raise ValueError("Asset path escapes Assets/")
     return value
-
-
-def _prepare_ui_node(node: dict) -> dict:
-    """JsonUtility may materialize null/missing nested objects; transmit explicit presence bits."""
-    result = dict(node)
-    for key in ("offset_min", "offset_max"):
-        present = node.get(key) is not None
-        result["has_" + key] = present
-        if not present:
-            result.pop(key, None)
-    result["children"] = [_prepare_ui_node(child) for child in node.get("children", [])]
-    return result
 
 
 @dataclass
@@ -103,6 +97,7 @@ class EditorConnection:
         asset_path(self.project, output_path, ".prefab")
         if (self.project / output_path).exists() or (self.project / (output_path + ".meta")).exists():
             raise ValueError("Output already exists; choose a new prefab path")
+        spec = UiPrefabSpec.model_validate(spec).model_dump()
         def validate(nodes):
             for node in nodes:
                 for key in ("font_path", "sprite_path"):
@@ -111,8 +106,12 @@ class EditorConnection:
                 validate(node["children"])
         validate(spec["children"])
         request_id = uuid.uuid4().hex
-        payload = {"id": request_id, "deadline": time.time() + timeout,
-                   "output_path": output_path, "spec": {**spec, "children": [_prepare_ui_node(node) for node in spec["children"]]}}
+        request = CreateUiPrefabRequest(
+            id=request_id, deadline=time.time() + timeout,
+            output_path=output_path, spec=spec,
+        )
+        payload = request.model_dump()
+        payload["spec"]["children"] = [_prepare_ui_node(node) for node in payload["spec"]["children"]]
         encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         if len(encoded) > 256 * 1024:
             raise ValueError("UI request exceeds 256 KiB")
@@ -136,10 +135,17 @@ class EditorConnection:
 
     async def _request_ui_query(self, endpoint: str, payload: dict) -> dict:
         request_id = uuid.uuid4().hex
+        model = REQUEST_MODELS[endpoint]
+        wire = model.model_validate({**payload, "id": request_id, "deadline": time.time() + 20}).model_dump()
+        if endpoint == "/ui/prefabs/batch":
+            for operation in wire["operations"]:
+                if operation["action"] == "add":
+                    operation["node"] = _prepare_ui_node(operation["node"])
+        limit = 12 * 1024 * 1024 if endpoint == "/ui/images/import" else 256 * 1024
+        if len(json.dumps(wire, ensure_ascii=False).encode("utf-8")) > limit:
+            raise ValueError("UI request exceeds size limit")
         try:
-            response = await self.client.post(endpoint, json={
-                "id": request_id, "deadline": time.time() + 20, **payload,
-            }, timeout=22)
+            response = await self.client.post(endpoint, json=wire, timeout=22)
             self.check_instance(response)
             response.raise_for_status()
             result = response.json()
@@ -214,9 +220,16 @@ class EditorConnection:
             raise ValueError("Use the version returned by inspect_ui_assets (ui_prefab: prefab.version)")
         if not 1 <= len(operations) <= 128:
             raise ValueError("Provide 1..128 batch operations")
-        prepared = [{**operation, "node": _prepare_ui_node(operation["node"])}
-                    if operation.get("action") == "add" and operation.get("node") is not None
-                    else operation for operation in operations]
+        operation_types = {
+            "add": UiNodeAddition, "delete": UiNodeDeletion, "move": UiNodeMove,
+            "modify": UiPropertyModification, "add_component": UiComponentAddition,
+        }
+        prepared = []
+        for operation in operations:
+            operation_type = operation_types.get(operation.get("action"))
+            if operation_type is None:
+                raise ValueError("Unknown operation action")
+            prepared.append(operation_type.model_validate(operation).model_dump())
         payload = {"asset_path": prefab_path, "expected_version": expected_version, "operations": prepared}
         if len(json.dumps(payload).encode("utf-8")) > 250 * 1024:
             raise ValueError("Batch request exceeds size limit")
@@ -236,7 +249,7 @@ class EditorConnection:
     async def inspect_ui_assets(self, assets: list[dict]) -> dict:
         if not 1 <= len(assets) <= 32:
             raise ValueError("Provide 1..32 assets")
-        payload = {"assets": assets}
+        payload = {"assets": [UiAssetInspection.model_validate(asset).model_dump() for asset in assets]}
         if len(json.dumps(payload).encode("utf-8")) > 250 * 1024:
             raise ValueError("Asset inspection request exceeds size limit")
         return await self._request_ui_query("/ui/assets/inspect", payload)

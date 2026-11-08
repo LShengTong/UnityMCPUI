@@ -1,0 +1,615 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "UiAssetSearch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_type": {
+          "type": "string",
+          "enum": [
+            "ui_prefab",
+            "sprite",
+            "tmp_font"
+          ],
+          "x-python-alias": "UiAssetTypeValue"
+        },
+        "search": {
+          "type": "string",
+          "default": "",
+          "maxLength": 200
+        },
+        "folder": {
+          "type": "string",
+          "default": "Assets"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50,
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "asset_type"
+      ]
+    },
+    "UiAssetInspection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "asset_type": {
+          "type": "string",
+          "enum": [
+            "ui_prefab",
+            "sprite",
+            "tmp_font"
+          ],
+          "x-python-alias": "UiAssetTypeValue"
+        },
+        "local_id": {
+          "type": "string",
+          "default": "",
+          "pattern": "^(?:-?[0-9]+)?$"
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "maxLength": 1024
+        },
+        "search_fallbacks": {
+          "type": "boolean",
+          "default": true
+        },
+        "max_nodes": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "required": [
+        "asset_path",
+        "asset_type"
+      ]
+    },
+    "UiNodeAddition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "add"
+          ]
+        },
+        "parent_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,63}$"
+        },
+        "node": {
+          "$ref": "create_ui_prefab.schema.json#/$defs/UiPrefabNode"
+        },
+        "sibling_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "action",
+        "parent_path",
+        "node"
+      ]
+    },
+    "UiNodeDeletion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "delete"
+          ]
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0/(?:0|[1-9][0-9]*)(?:/(?:0|[1-9][0-9]*)){0,63}$"
+        }
+      },
+      "required": [
+        "action",
+        "index_path"
+      ]
+    },
+    "UiNodeMove": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "move"
+          ]
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0/(?:0|[1-9][0-9]*)(?:/(?:0|[1-9][0-9]*)){0,63}$"
+        },
+        "parent_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "sibling_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1,
+          "maximum": 2000
+        },
+        "world_position_stays": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "action",
+        "index_path",
+        "parent_path"
+      ]
+    },
+    "UiPropertyModification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "property": {
+          "type": "string",
+          "enum": [
+            "name",
+            "active",
+            "text",
+            "font_size",
+            "text_color",
+            "font_path",
+            "sprite_path",
+            "color",
+            "anchored_position",
+            "size_delta",
+            "anchor",
+            "anchor_min",
+            "anchor_max",
+            "pivot",
+            "offset_min",
+            "offset_max",
+            "spacing",
+            "padding",
+            "interactable",
+            "image_type",
+            "preferred_width",
+            "preferred_height",
+            "min_width",
+            "min_height",
+            "flexible_width",
+            "flexible_height",
+            "horizontal_fit",
+            "vertical_fit",
+            "grid_cell_size",
+            "grid_spacing",
+            "scroll_horizontal",
+            "scroll_vertical"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "modify"
+          ]
+        }
+      },
+      "required": [
+        "index_path",
+        "property",
+        "value",
+        "action"
+      ]
+    },
+    "UiComponentAddition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "add_component"
+          ]
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "component": {
+          "type": "string",
+          "enum": [
+            "Image",
+            "Button",
+            "CanvasGroup",
+            "LayoutElement",
+            "ContentSizeFitter",
+            "HorizontalLayoutGroup",
+            "VerticalLayoutGroup",
+            "GridLayoutGroup",
+            "RectMask2D",
+            "ScrollRect"
+          ]
+        },
+        "viewport_path": {
+          "type": "string",
+          "default": ""
+        },
+        "content_path": {
+          "type": "string",
+          "default": ""
+        },
+        "horizontal": {
+          "type": "boolean",
+          "default": false
+        },
+        "vertical": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "action",
+        "index_path",
+        "component"
+      ]
+    },
+    "UiBatchOperation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/UiPropertyModification"
+        },
+        {
+          "$ref": "#/$defs/UiNodeAddition"
+        },
+        {
+          "$ref": "#/$defs/UiNodeDeletion"
+        },
+        {
+          "$ref": "#/$defs/UiNodeMove"
+        },
+        {
+          "$ref": "#/$defs/UiComponentAddition"
+        }
+      ],
+      "x-discriminator": "action"
+    },
+    "FindUiAssetsRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiAssetSearch"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "queries"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/assets/find"
+    },
+    "InspectUiAssetsRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiAssetInspection"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "assets"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/assets/inspect"
+    },
+    "BatchEditUiPrefabRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "expected_version": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiBatchOperation"
+          },
+          "minItems": 1,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "asset_path",
+        "expected_version",
+        "operations"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/prefabs/batch"
+    },
+    "PreviewUiPrefabRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer",
+          "default": 1280,
+          "minimum": 64,
+          "maximum": 2048
+        },
+        "height": {
+          "type": "integer",
+          "default": 720,
+          "minimum": 64,
+          "maximum": 2048
+        },
+        "background": {
+          "type": "string",
+          "default": "#202020"
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "asset_path"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/prefabs/preview"
+    },
+    "ImportUiImageRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "image_base64": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 11184812
+        },
+        "border": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "default": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "pixels_per_unit": {
+          "type": "number",
+          "default": 100,
+          "exclusiveMinimum": 0,
+          "maximum": 10000
+        },
+        "filter_mode": {
+          "type": "string",
+          "enum": [
+            "point",
+            "bilinear"
+          ],
+          "default": "bilinear"
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "asset_path",
+        "image_base64"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/images/import"
+    },
+    "ListUiBackupsRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "asset_path"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/backups/list"
+    },
+    "RestoreUiPrefabRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "backup_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "expected_version": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "backup_id",
+        "expected_version"
+      ],
+      "x-request": true,
+      "x-endpoint": "/ui/backups/restore"
+    },
+    "UiPropertyChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "property": {
+          "type": "string",
+          "enum": [
+            "name",
+            "active",
+            "text",
+            "font_size",
+            "text_color",
+            "font_path",
+            "sprite_path",
+            "color",
+            "anchored_position",
+            "size_delta",
+            "anchor",
+            "anchor_min",
+            "anchor_max",
+            "pivot",
+            "offset_min",
+            "offset_max",
+            "spacing",
+            "padding",
+            "interactable",
+            "image_type",
+            "preferred_width",
+            "preferred_height",
+            "min_width",
+            "min_height",
+            "flexible_width",
+            "flexible_height",
+            "horizontal_fit",
+            "vertical_fit",
+            "grid_cell_size",
+            "grid_spacing",
+            "scroll_horizontal",
+            "scroll_vertical"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "index_path",
+        "property",
+        "value"
+      ]
+    }
+  }
+}

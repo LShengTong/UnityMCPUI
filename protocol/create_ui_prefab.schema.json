@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/CreateUiPrefabRequest",
+  "$defs": {
+    "UiOffset": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-python-name": "UiOffset",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -16384,
+          "maximum": 16384,
+          "x-csharp-default": "float.NaN"
+        },
+        "y": {
+          "type": "number",
+          "minimum": -16384,
+          "maximum": 16384,
+          "x-csharp-default": "float.NaN"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "UiPrefabNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-python-name": "UiNode",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\x00-\\x1f]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "image",
+            "text",
+            "button"
+          ],
+          "default": "panel"
+        },
+        "width": {
+          "type": "number",
+          "default": 320,
+          "maximum": 16384,
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "default": 80,
+          "maximum": 16384,
+          "exclusiveMinimum": 0
+        },
+        "x": {
+          "type": "number",
+          "default": 0,
+          "minimum": -16384,
+          "maximum": 16384
+        },
+        "y": {
+          "type": "number",
+          "default": 0,
+          "minimum": -16384,
+          "maximum": 16384
+        },
+        "anchor": {
+          "type": "string",
+          "enum": [
+            "top_left",
+            "top_center",
+            "top_right",
+            "center_left",
+            "center",
+            "center_right",
+            "bottom_left",
+            "bottom_center",
+            "bottom_right",
+            "stretch_horizontal_top",
+            "stretch_horizontal_center",
+            "stretch_horizontal_bottom",
+            "stretch_vertical_left",
+            "stretch_vertical_center",
+            "stretch_vertical_right",
+            "stretch"
+          ],
+          "x-python-alias": "AnchorPreset",
+          "default": "center",
+          "description": "Choose a fixed corner/edge or stretch preset to match layout intent. Parent LayoutGroup may drive anchors."
+        },
+        "offset_min": {
+          "default": null,
+          "description": "Explicit left/bottom offset in parent units; overrides calculated geometry.",
+          "x-unity-presence": true,
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiOffset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "offset_max": {
+          "default": null,
+          "description": "Explicit right/top offset; negative x/y mean inward margins on stretched axes.",
+          "x-unity-presence": true,
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiOffset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "color": {
+          "type": "string",
+          "default": "#FFFFFF",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "maxLength": 4096
+        },
+        "text_color": {
+          "type": "string",
+          "default": "#202020",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        "font_size": {
+          "type": "number",
+          "default": 24,
+          "maximum": 512,
+          "exclusiveMinimum": 0
+        },
+        "font_path": {
+          "type": "string",
+          "default": ""
+        },
+        "sprite_path": {
+          "type": "string",
+          "default": ""
+        },
+        "layout": {
+          "type": "string",
+          "enum": [
+            "none",
+            "vertical",
+            "horizontal"
+          ],
+          "default": "none"
+        },
+        "spacing": {
+          "type": "number",
+          "default": 12,
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "padding": {
+          "type": "integer",
+          "default": 16,
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiPrefabNode"
+          },
+          "default": [],
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "UiPrefabSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-python-name": "UiPrefabSpec",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\x00-\\x1f]+$"
+        },
+        "reference_width": {
+          "type": "number",
+          "default": 1920,
+          "maximum": 16384,
+          "exclusiveMinimum": 0
+        },
+        "reference_height": {
+          "type": "number",
+          "default": 1080,
+          "maximum": 16384,
+          "exclusiveMinimum": 0
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiPrefabNode"
+          },
+          "minItems": 1,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "name",
+        "children"
+      ]
+    },
+    "CreateUiPrefabRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-request": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "output_path": {
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/$defs/UiPrefabSpec"
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "output_path",
+        "spec"
+      ],
+      "x-endpoint": "/ui/prefabs"
+    }
+  }
+}
