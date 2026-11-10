@@ -1,0 +1,37 @@
+name: Protocol checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol:
+    name: Protocol checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Check before installing or testing; never regenerate files in CI.
+      - name: Check generated protocol files
+        run: python scripts/generate_protocol.py --check
+
+      - name: Install project and test dependencies
+        run: python -m pip install ".[test]"
+
+      - name: Test request and response protocols
+        run: python scripts/check_protocol.py

@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityMcp.Editor
@@ -20,7 +21,7 @@ namespace UnityMcp.Editor
 
         static void Validate(FindUiAssetsRequest request) => RequestProtocolValidation.Validate(request);
 
-        static string Error(string id, string message) => JsonUtility.ToJson(new ReplyHeader {
+        static string Error(string id, string message) => JsonUtility.ToJson(new FindUiAssetsReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message
         });
         static string Execute(FindUiAssetsRequest request)
@@ -37,10 +38,10 @@ namespace UnityMcp.Editor
                 }
                 catch (Exception e) { results.Add(new UiAssetSearchResult { index = i, asset_type = query?.asset_type, error = e.Message }); }
             }
-            string header = JsonUtility.ToJson(new ReplyHeader {
-                id = request.id, instance_id = EditorInstanceInfo.InstanceId, ok = true
+            return JsonUtility.ToJson(new FindUiAssetsReply {
+                id = request.id, instance_id = EditorInstanceInfo.InstanceId, ok = true,
+                results = results.ToArray()
             });
-            return header.Substring(0, header.Length - 1) + ",\"results\":" + JsonReplySerializer.Array(results) + "}";
         }
     }
 }

@@ -8,16 +8,11 @@ namespace UnityMcp.Editor
 {
     internal sealed class HealthRequestHandler : IEditorRequestHandler
     {
-        [Serializable] class Response
-        {
-            public int protocol;
-            public string project_path, instance_id;
-        }
         readonly string json;
         // Construct on the main thread; Execute returns the snapshot without Unity API calls.
         public HealthRequestHandler()
         {
-            json = JsonUtility.ToJson(new Response {
+            json = JsonUtility.ToJson(new HealthReply {
                 protocol = EditorInstanceInfo.ProtocolVersion,
                 project_path = Path.GetFullPath(Path.Combine(Application.dataPath, "..")),
                 instance_id = EditorInstanceInfo.InstanceId

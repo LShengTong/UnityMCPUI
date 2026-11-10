@@ -1,0 +1,151 @@
+{
+  "routes": [
+    {
+      "name": "Health",
+      "method": "GET",
+      "path": "/health",
+      "request": null,
+      "response": "HealthReply"
+    },
+    {
+      "name": "ProjectInfo",
+      "method": "GET",
+      "path": "/project/info",
+      "request": null,
+      "response": "ProjectInfoReply"
+    },
+    {
+      "name": "FindUiAssets",
+      "method": "POST",
+      "path": "/ui/assets/find",
+      "request": "FindUiAssetsRequest",
+      "response": "FindUiAssetsReply"
+    },
+    {
+      "name": "InspectUiAssets",
+      "method": "POST",
+      "path": "/ui/assets/inspect",
+      "request": "InspectUiAssetsRequest",
+      "response": "InspectUiAssetsReply"
+    },
+    {
+      "name": "CreateUiPrefab",
+      "method": "POST",
+      "path": "/ui/prefabs",
+      "request": "CreateUiPrefabRequest",
+      "response": "CreateUiPrefabReply"
+    },
+    {
+      "name": "BatchEditUiPrefab",
+      "method": "POST",
+      "path": "/ui/prefabs/batch",
+      "request": "BatchEditUiPrefabRequest",
+      "response": "BatchEditUiPrefabReply"
+    },
+    {
+      "name": "PreviewUiPrefab",
+      "method": "POST",
+      "path": "/ui/prefabs/preview",
+      "request": "PreviewUiPrefabRequest",
+      "response": "PreviewUiPrefabReply"
+    },
+    {
+      "name": "ImportUiImage",
+      "method": "POST",
+      "path": "/ui/images/import",
+      "request": "ImportUiImageRequest",
+      "response": "ImportUiImageReply"
+    },
+    {
+      "name": "ListUiBackups",
+      "method": "POST",
+      "path": "/ui/backups/list",
+      "request": "ListUiBackupsRequest",
+      "response": "ListUiBackupsReply"
+    },
+    {
+      "name": "RestoreUiPrefab",
+      "method": "POST",
+      "path": "/ui/backups/restore",
+      "request": "RestoreUiPrefabRequest",
+      "response": "RestoreUiPrefabReply"
+    },
+    {
+      "name": "CompilationStatus",
+      "method": "GET",
+      "path": "/editor/compilation",
+      "request": null,
+      "response": "CompilationStatusReply"
+    },
+    {
+      "name": "RefreshAssets",
+      "method": "POST",
+      "path": "/editor/assets/refresh",
+      "request": "RefreshAssetsRequest",
+      "response": "RefreshAssetsReply"
+    },
+    {
+      "name": "PlayStatus",
+      "method": "GET",
+      "path": "/editor/play/status",
+      "request": null,
+      "response": "PlayStatusReply"
+    },
+    {
+      "name": "EnterPlayMode",
+      "method": "POST",
+      "path": "/editor/play/enter",
+      "request": "EnterPlayModeRequest",
+      "response": "EnterPlayModeReply"
+    },
+    {
+      "name": "ExitPlayMode",
+      "method": "POST",
+      "path": "/editor/play/exit",
+      "request": "ExitPlayModeRequest",
+      "response": "ExitPlayModeReply"
+    },
+    {
+      "name": "InspectRuntimeUi",
+      "method": "POST",
+      "path": "/editor/play/inspect",
+      "request": "InspectRuntimeUiRequest",
+      "response": "InspectRuntimeUiReply"
+    },
+    {
+      "name": "MountTestPrefab",
+      "method": "POST",
+      "path": "/editor/play/mount",
+      "request": "MountTestPrefabRequest",
+      "response": "MountTestPrefabReply"
+    },
+    {
+      "name": "RunUiTest",
+      "method": "POST",
+      "path": "/editor/play/run",
+      "request": "RunUiTestRequest",
+      "response": "RunUiTestReply"
+    },
+    {
+      "name": "ClearTestInstances",
+      "method": "POST",
+      "path": "/editor/play/clear",
+      "request": "ClearTestInstancesRequest",
+      "response": "ClearTestInstancesReply"
+    },
+    {
+      "name": "CreateTmpFont",
+      "method": "POST",
+      "path": "/ui/fonts/create",
+      "request": "CreateTmpFontRequest",
+      "response": "CreateTmpFontReply"
+    },
+    {
+      "name": "UpdateTmpFontCharacters",
+      "method": "POST",
+      "path": "/ui/fonts/characters",
+      "request": "UpdateTmpFontCharactersRequest",
+      "response": "UpdateTmpFontCharactersReply"
+    }
+  ]
+}

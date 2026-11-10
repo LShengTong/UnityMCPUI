@@ -22,17 +22,12 @@ namespace UnityMcp.Editor
 
         static void Validate(RestoreUiPrefabRequest request) => RequestProtocolValidation.Validate(request);
 
-        [Serializable] sealed class Reply
-        {
-            public string id, instance_id, asset_path, version, backup_id, restored_from, error, warning;
-            public bool ok, saved, rolled_back;
-        }
-        static string Error(string id, string message) => JsonUtility.ToJson(new Reply {
+        static string Error(string id, string message) => JsonUtility.ToJson(new RestoreUiPrefabReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message
         });
-        static string Execute(RestoreUiPrefabRequest request)
+        internal static string Execute(RestoreUiPrefabRequest request)
         {
-            UiPrefabBackupStore.Entry safety = null;
+            BackupEntry safety = null;
             string path = null;
             bool written = false, rolledBack = false;
             try
@@ -64,7 +59,7 @@ namespace UnityMcp.Editor
                 string warning = null;
                 try { UiPrefabBackupStore.MarkSaved(safety, afterVersion); }
                 catch (Exception e) { warning = "Restored successfully; backup completion metadata could not be updated: " + e.Message; }
-                return JsonUtility.ToJson(new Reply { id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                return JsonUtility.ToJson(new RestoreUiPrefabReply { id = request.id, instance_id = EditorInstanceInfo.InstanceId,
                     ok = true, saved = true, asset_path = path, version = afterVersion,
                     backup_id = safety.backup_id, restored_from = source.backup_id, warning = warning });
             }
@@ -85,7 +80,7 @@ namespace UnityMcp.Editor
                     catch (Exception rollback) { message += "; rollback failed: " + rollback.Message; }
                 }
                 if (safety != null) message += "; pre-restore backup_id=" + safety.backup_id;
-                return JsonUtility.ToJson(new Reply { id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                return JsonUtility.ToJson(new RestoreUiPrefabReply { id = request.id, instance_id = EditorInstanceInfo.InstanceId,
                     error = message, asset_path = path, backup_id = safety?.backup_id, restored_from = request.backup_id,
                     saved = written, rolled_back = rolledBack });
             }

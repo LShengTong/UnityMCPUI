@@ -8,7 +8,7 @@ namespace UnityMcp.Editor
 {
     internal static class AddUiNodeOperation
     {
-        public static void Execute(Transform root, Transform parent, UiBatchOperation operation)
+        public static void Execute(Transform root, Transform parent, UiBatchOperation operation, string destination)
         {
             UiNodeUtility.EnsureEditable(parent, root);
             UiNodeUtility.CheckInsertionIndex(parent, operation.sibling_index);
@@ -16,7 +16,7 @@ namespace UnityMcp.Editor
             for (int i = 0; i < parent.childCount; i++)
                 if (parent.GetChild(i).name == operation.node.name)
                     throw new Exception("A sibling already has this name");
-            UiPrefabBridge.AddNode(operation.node, parent);
+            UiPrefabBridge.AddNode(operation.node, parent, destination);
             var added = parent.GetChild(parent.childCount - 1);
             if (operation.sibling_index >= 0) added.SetSiblingIndex(operation.sibling_index);
         }

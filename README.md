@@ -7,7 +7,7 @@
 ## 当前能力
 
 - 批量搜索、读取 UI Prefab、Sprite 和 TMP 字体。
-- 按结构化描述创建新的 uGUI Canvas Prefab。
+- 按结构化描述创建新的 uGUI Prefab，根节点仅使用 RectTransform，挂在场景已有 Canvas 下。
 - 批量修改属性、新增/删除/移动节点、添加支持的组件。
 - 导入本地 PNG/JPEG 为 Sprite，配置九宫格 Border。
 - 在隔离预览场景中按指定分辨率生成 PNG，通过 MCP 返回图片。
@@ -82,9 +82,19 @@ py -3.12 -m venv .venv
 | `unity_project_info` | 读取项目基本信息与运行中的 Unity 版本 |
 | `find_ui_assets` | 按条件批量搜索 `ui_prefab`、`sprite`、`tmp_font` |
 | `inspect_ui_assets` | 批量读取资源详情、Prefab 层级和版本、字体已有字形覆盖情况 |
-| `create_ui_prefab` | 创建新的 uGUI Canvas Prefab，不覆盖已有资源 |
-| `batch_edit_ui_prefab` | 按序组合属性修改、节点增删移动和组件添加 |
+| `create_ui_prefab` | 创建 RectTransform 根节点的 uGUI Prefab，可引用已有 UI prefab，不覆盖已有资源 |
+| `refresh_assets` | 写入 C# 等资源后请求 Unity 刷新，不代表编译成功 |
+| `get_compilation_status` | 查询 / 等待刷新和编译状态，返回编译错误，重载后自动重连同一项目 |
+| `get_play_status` | 查询 / 等待 Play 状态、会话、帧数及工具创建的测试实例 |
+| `enter_play_mode` / `exit_play_mode` | 默认在独立测试场景进入 Play，可选 current 模式；退出后恢复并清理 |
+| `inspect_runtime_ui` | 读取运行时节点、Canvas、EventSystem、组件及序列化引用 |
+| `mount_test_prefab` | 将 UI prefab 挂到场景已有 Canvas 或容器下 |
+| `run_ui_test` | 运行按钮回调、TMP 输入、条件等待、断言和 Game 截图 |
+| `clear_test_instances` | 仅销毁工具创建的测试实例，不保存场景 |
+| `batch_edit_ui_prefab` | 按序组合属性修改、节点增删移动、复制、插入已有 prefab 和组件添加 |
 | `import_ui_image` | 导入本地 PNG/JPEG 为新的单 Sprite 资源 |
+| `create_tmp_font` | 从项目内 TTF/OTF/TTC 创建 TMP 字体资产，可预生成中文字符 |
+| `update_tmp_font_characters` | 追加或替换字体字符集，保留资产 GUID |
 | `preview_ui_prefab` | 渲染指定分辨率的 Prefab 预览，返回 MCP 图片 |
 | `list_ui_backups` | 按 Prefab 路径分页查询修改前快照 |
 | `restore_ui_prefab` | 校验当前版本与 GUID 后，按备份 ID 原地恢复 |
@@ -178,6 +188,112 @@ py -3.12 -m venv .venv
 
 预览不模拟运行时数据或动画，根世界空间 Canvas 暂不支持。实例化可能执行项目的 ExecuteAlways/OnValidate 脚本，不能把截图视为完整的游戏运行验证。
 
+创建时引用已有组件，例如在 `spec.children` 中填写：
+
+```json
+{"name":"ConfirmButton","kind":"prefab","prefab_path":"Assets/UI/Common/Button.prefab","x":0}
+```
+
+保留嵌套 prefab 关联，未填写的布局字段沿用源资源；仅显式填写的 anchor、width、height、x、y、offset_min/max 会覆盖布局。width/height 表示实际矩形尺寸，x/y 表示 anchoredPosition 分量；源组件外观保留，不支持在引用节点中定义 children/layout。
+
+批量编辑的 `operations` 可加入：
+
+```json
+[
+  {"action":"duplicate","index_path":"0/0","parent_path":"0","name":"CardCopy"},
+  {"action":"instantiate_prefab","prefab_path":"Assets/UI/Common/Button.prefab","parent_path":"0","name":"ConfirmButton","sibling_index":-1}
+]
+```
+
+省略 name 时自动生成不冲突的名称。复制包含子树及组件；插入保留 prefab 关联和布局。拒绝复制根节点、复制到自身子树、复制嵌套 prefab 内部节点、向嵌套实例内部插入及循环 prefab 依赖。所有已有节点地址在执行前绑定，新节点需下次请求再编辑。成功响应 `created_nodes` 返回仍存在的新建根节点的 `operation_index` 和最终 `index_path`。
+
+创建普通节点和 `batch_edit_ui_prefab` 的 `modify` 均支持以下属性（引用 prefab 的创建节点仍只覆盖显式布局）：
+
+| 分类 | 属性 |
+| --- | --- |
+| 文字 / 按钮标签 | `text_alignment`、`word_wrap`、`auto_size`、`font_size_min`、`font_size_max`、`text_overflow`、`line_spacing` |
+| 图片 | `image_type`、`preserve_aspect`、`fill_method`、`fill_origin`、`fill_amount`、`fill_clockwise`、`raycast_target` |
+| 横向 / 纵向布局 | `child_alignment`、`child_control_width/height`、`child_force_expand_width/height`、`child_scale_width/height` |
+| Grid 布局 | `grid_cell_size`、`grid_spacing`、`grid_constraint`、`grid_constraint_count`、`grid_start_corner`、`grid_start_axis`，以及 `child_alignment` |
+
+例如创建一个固定四列的网格容器：
+
+```json
+{"name":"Inventory","layout":"grid","grid_constraint":"FixedColumnCount","grid_constraint_count":4,"grid_cell_size":{"x":80,"y":80},"grid_spacing":{"x":8,"y":8},"child_alignment":"UpperLeft"}
+```
+
+批量修改仍使用字符串 value，例如 `{"action":"modify","index_path":"0/0","property":"fill_amount","value":"0.5"}`。修改只作用于目标节点上的组件；按钮文字通常位于其 Label 子节点。
+
+文字对齐可选 TopLeft、Top、TopRight、Left、Center、Right、BottomLeft、Bottom、BottomRight、Justified、Flush；溢出可选 Overflow、Ellipsis、Masking、Truncate、Page。自动字号范围为 1～512，按保持 min≤max 的顺序设置上下限；line_spacing 范围为 -512～512。
+
+图片填充需 `image_type: "Filled"`。fill_method 可选 Horizontal、Vertical、Radial90、Radial180、Radial360；fill_origin 沿用 Unity 对应方式的原点编号（直线 0～1，径向 0～3），fill_amount 为 0～1。切换为直线填充时，超出范围的旧 origin 会重置为 0。raycast_target 在创建时省略则保留原规则：按钮背景为 true，普通文字/图片为 false。
+
+child_alignment 使用 Unity TextAnchor 名称（如 UpperLeft、MiddleCenter、LowerRight）。grid_constraint 为 Flexible、FixedColumnCount 或 FixedRowCount；grid_constraint_count 为 1～2000，固定列/行模式时生效。grid_start_corner 为 UpperLeft、UpperRight、LowerLeft 或 LowerRight；grid_start_axis 为 Horizontal 或 Vertical。布局父级可能驱动子节点尺寸，Grid 由 cellSize 控制格子尺寸。
+
+脚本驱动的界面可以按以下流程制作：
+
+1. 创建 prefab，再用 inspect 确认节点路径和组件。
+2. 使用普通文件编辑能力编写 `Assets/.../*.cs`，定义运行时 MonoBehaviour 及 `[SerializeField]` 字段。
+3. 调用 `refresh_assets`，再调用 `get_compilation_status`，可传 `wait_seconds: 60` 等待。确认 is_compiling、is_updating、refresh_pending 都为 false；检查 errors、has_compilation_result 和 compilation_revision。没有观测到完成的编译时不能仅凭错误列表为空认定编译成功；没有代码变化的刷新也可能不产生新一轮编译。
+4. 重新 inspect 获取最新版本，用同一个批量请求挂脚本并绑定引用：
+
+```json
+[
+  {"action":"add_script","index_path":"0","script_path":"Assets/Scripts/UI/DialogView.cs"},
+  {"action":"set_reference","index_path":"0","component_type":"MyGame.UI.DialogView","field_path":"confirmButton","target_path":"0/1/0","target_component":"UnityEngine.UI.Button"},
+  {"action":"set_reference","index_path":"0","component_type":"MyGame.UI.DialogView","field_path":"content","target_path":"0/1","target_component":"UnityEngine.CanvasGroup"}
+]
+```
+
+脚本必须已经编译为非抽象、非泛型的运行时 MonoBehaviour，拒绝重复挂载和 Editor-only 脚本。字段使用 C# 序列化字段名，例如 `[SerializeField] private Button confirmButton` 对应 confirmButton。支持单个对象引用及嵌套序列化字段，不支持数组、列表或属性 setter。省略 target_component 则引用目标 GameObject；clear=true 清空字段且无需 target_path。同类型组件存在多个时，用 component_index / target_component_index 指定其在完全相同类型组件中的零基序号。类型名使用完整命名空间。
+
+挂载脚本可能触发其 Editor 回调及 RequireComponent 行为。当前批量的已有节点路径仍在执行前绑定，新节点仍需下一批操作；可以在同批中挂组件后再绑定字段。绑定失败则不保存本批编辑。编译结果最多返回 200 条错误，errors_truncated 表示是否截断；结果通过 SessionState 跨程序集重载保存，但不保证跨 Editor 重启保留。
+
+编译状态查询可在重载后重新读取项目发现文件并更新当前连接；写操作不会自动重试。刷新成功响应表示主线程中的 AssetDatabase.Refresh 已返回，不表示后续编译成功；若响应因重载中断，应先查询状态再决定是否重发。
+
+Play 功能测试可按以下顺序执行：
+
+1. `get_play_status` 记录初始状态。默认 `enter_play_mode` 使用独立模式，创建临时 UI 场景及 Canvas、EventSystem/输入模块、背景相机；原 Edit 场景不关闭、不自动保存。进入前要求已保存且无未保存修改，并关闭 Prefab Mode。通过 `playModeStartScene` 从测试场景启动，不让原场景对象一起运行。reference_width/reference_height（默认 1920×1080）只设置新测试 Canvas 的参考分辨率。
+2. 用 `get_play_status(wait_for="playing", wait_seconds=60)` 确认切换完成，并检查 test_mode、test_scene_error。独立模式下，挂载可只传 prefab：
+
+```json
+{"prefab_path":"Assets/UI/Dialog.prefab"}
+```
+
+需要实际场景集成测试时，显式使用 `enter_play_mode` 的 `mode: "current"`；它沿用原场景/Play 启动场景设置。用 inspect_runtime_ui 查明 Canvas、EventSystem 和容器后，挂载时传父路径：
+
+```json
+{"prefab_path":"Assets/UI/Dialog.prefab","parent_path":"UIRoot/Canvas/PanelContainer","scene_name":"Main"}
+```
+
+3. 用返回的 test_instance_id 执行 `run_ui_test`：
+
+```json
+{
+  "test_instance_id":"替换为mount返回的ID",
+  "steps":[
+    {"action":"invoke_button","path":"OpenButton"},
+    {"action":"wait_condition","path":"SettingsPanel","property":"active_in_hierarchy","expected":"true","timeout_seconds":2},
+    {"action":"assert","path":"SettingsPanel","property":"active_self","expected":"true"},
+    {"action":"screenshot","width":1280,"height":720}
+  ]
+}
+```
+
+条件 expected 一律为字符串，布尔条件使用 "true"/"false"。path 是测试根内的相对名称路径，也支持 "0" 根、"0/1" 索引路径。按钮操作直接调用 onClick，属于 interaction_mode=callback，不验证鼠标射线、遮挡或键盘导航。TMP 输入使用 set_input_text，text 为字符串，notify 控制是否触发值变化通知。reference_is_set 和 reference_path 条件需 component_type、field_path，后者比较 inspect 返回的完整场景路径。
+
+每次最多 32 步，总执行时间最多 15 秒，单次条件等待最多 10 秒；失败停在首个失败步骤并返回 expected/actual/error/frame_count。最多一张真实 Game 截图，Game view 每边需 ≤2048 像素且帧数必须推进；返回 JSON 加图片附件，不是静态 prefab 预览。游戏暂停时先恢复再测试。
+
+screenshot 可成对指定 width/height（1～2048），省略或两者均为 0 则截取当前尺寸。内部使用公开的 Screen.SetResolution，等待目标尺寸连续两帧稳定并更新布局后截图，校验 PNG 尺寸，最后尝试恢复原宽高和窗口模式（恢复最多额外等待 2 秒）。尺寸切换或恢复无法确认时返回失败，不会缩放旧截图冒充目标分辨率。恢复宽高不等于恢复 Game View 原来的 Free Aspect / 固定分辨率下拉预设。多分辨率验证对同一个 test_instance_id 分别调用，例如 1280×720、1600×1200；游戏仍在运行，两次调用之间不会自动冻结或重置状态。
+
+4. `clear_test_instances` 只清理工具创建的对象；如果本次进入了 Play，结束后 `exit_play_mode` 并等待 stopped。退出会结束整个游戏会话，不能把它当作只清理一个测试实例。
+
+挂载需要活动 Canvas 和唯一启用的 EventSystem/输入模块。current 模式使用现成的场景配置；isolated 模式使用工具创建的环境，省略父路径时默认挂到 UnityMcpTestCanvas/Content。测试实例最多 16 个，退出 Play 后旧 ID 失效；为核对所有权，实例根会命名为 __UnityMcpTest_ID，脚本不要重命名该根。查询状态在重载后可自动重连，写操作不自动重试。
+
+退出独立测试会恢复原 Play 启动场景和原场景配置，并删除工具生成的 Assets/__UnityMcpPlayScene_GUID 临时资源。用 get_play_status(wait_for="stopped", wait_seconds=60) 等到恢复完成，scene_restore_pending/error 表示恢复状态；失败时保留恢复记录和临时资源，不丢弃当前未保存修改。修复错误后可再次 exit_play_mode 请求恢复。SessionState 支持跨程序集重载恢复，但不承诺进程崩溃后自动恢复，遗留临时资源需人工核对。切换两种模式前先退出 Play。
+
+独立场景不等于独立进程：RuntimeInitializeOnLoadMethod 等项目全局启动逻辑仍会执行，可能创建额外场景、EventSystem 或常驻对象。检测到非预期场景或输入配置时会报告错误，而不会擅自删掉这些对象。测试会执行 prefab 脚本和回调，可能影响实例外状态；工具不提供游戏沙箱。
+
 ### 5. 备份与恢复
 
 每次批量编辑保存前，在目标项目的 `Library/UnityMcp/Backups/` 保存原 Prefab 快照；备份失败则不提交该次保存。
@@ -197,6 +313,20 @@ py -3.12 -m venv .venv
 - 图片：本地 PNG/JPEG，最大8 MiB、每边8192像素且不超过16 megapixels；导入为单 Sprite，拒绝覆盖。Border 顺序为左、下、右、上，九宫格 Image 另设 `image_type="Sliced"`。
 - 资源查询：搜索范围为 Assets；Sprite 子资源使用 `local_id` 区分，但当前 Prefab 赋值仍只接受 `sprite_path`，不能按 local_id 选择切片。
 - 字体检查：检查已有图集字形，可包含 TMP 回退链，不向动态图集加字；缺字不代表字体源一定无法动态生成。
+- 字体创建：`create_tmp_font` 从已导入的 Assets 字体文件生成新的 `.asset`，输出目录须存在，拒绝覆盖。需要 Include Font Data 和 TMP Essential Resources。默认 dynamic、48 点采样、1024 单图集、5 像素 padding，并启用构建时清除动态数据；可选 static（必须提供字符）。atlas_size 支持 512/1024/2048。每次最多 4096 UTF-16 字符，忽略换行和制表符、按 Unicode 码点去重。中文可直接传实际 UI 文案，无需生成整个汉字库。
+- 字符修改：`update_tmp_font_characters` 默认 append，`mode="replace"` 清空原字形后生成新字符，影响所有使用该字体的 UI；动态字体之后仍可自动生成其他字符。保留 GUID 和原 static/dynamic 模式。仅支持已保存、源字体可用、材质与图集内嵌于同一资产、单图集且每边不超过 2048 的字体，不支持 Dynamic OS。异常时恢复修改前文件；正常完成但缺字时保存部分覆盖，务必检查 `all_characters_present` 和 `missing_codepoints`。这两种方法不修改节点文字，节点换字体仍使用已有 `font_path`。
+
+例如先调用 `create_tmp_font`：
+
+```json
+{"source_font_path":"Assets/Fonts/NotoSansSC-Regular.ttf","asset_path":"Assets/Fonts/ChineseUI.asset","characters":"背包装备数量确定取消","population_mode":"static"}
+```
+
+新增文案后调用 `update_tmp_font_characters`：
+
+```json
+{"asset_path":"Assets/Fonts/ChineseUI.asset","characters":"强化升级","mode":"append"}
+```
 - 暂不支持挂载任意业务脚本、任意 C# 执行或完整事件绑定。
 
 完整参数以 MCP 工具 schema 为准；示例见 [UI 工具示例](skills/unity-ui/references/examples.md)。
@@ -217,7 +347,8 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 - Unity 仅监听 `127.0.0.1` 动态端口，通过 `Library/UnityMcp/bridge.json` 公布 port、token。
 - Python 用 `/project/info` 握手，核对项目路径、协议、实例和运行版本；后续携带 Token 并校验响应实例。
 - `/health` 是可选快照接口，正常连接不需要预先调用。
-- 网络接收在后台；需要 Unity API 的操作由 Editor 主线程队列执行。编译、导入和 Play 模式期间暂停执行，排队仍受截止时间限制。
+- 网络接收在后台；需要 Unity API 的操作由 Editor 主线程队列执行。编译、导入期间暂停执行，资产编辑队列在 Play 时暂停；Play 工具使用独立队列，排队仍受截止时间限制。
+- 桥接包会以约 30Hz 唤醒后台编辑器，整个 Play 会话临时启用后台运行，退出后恢复原值，重载后继续生效，不抢窗口焦点。唤醒依赖 Unity 内部 SignalTick，版本不支持时会输出警告；弹窗、断点或主线程阻塞仍需要处理。首次升级时，旧代码若已卡在后台，需要切回 Unity 完成一次编译。
 - 队列容量32，等待任务结果超时20秒。超时不证明操作未完成，应先查询输出再决定是否重试。
 - 项目详情、统一资源查询和备份列表声明为 MCP 只读工具；审批是否自动放行由客户端策略决定。预览可能执行脚本，不声明纯只读。
 
@@ -227,15 +358,15 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 | --- | --- |
 | `src/unity_mcp/server.py` | MCP 入口和工具注册 |
 | `src/unity_mcp/bridge.py` | Editor 连接、HTTP 请求、身份及路径校验 |
-| `src/unity_mcp/ui_schema.py` | UI 创建和批量操作参数 |
+| `src/unity_mcp/generated/requests.py` | 自动生成的请求模型；UI 业务规则在 Unity 执行前校验 |
 | `src/unity_mcp/asset_schema.py` | 资源查询类型 enum 与参数 |
 | `src/unity_mcp/image_import.py` | 本地图片读取和格式检查 |
 | `unity-package/Editor/Handlers/` | 各请求类型对应的 Handler |
 | `unity-package/Editor/Server/` | Editor 服务生命周期、监听器、发现文件、实例信息和主线程任务队列 |
 | `unity-package/Editor/Handlers/Base/` | HTTP 鉴权与分发入口、请求接口、通用解析、请求体读取和序列化工具 |
-| `protocol/` | 全部 JSON 请求、查询参数、批量动作及共用节点的 JSON Schema |
+| `protocol/` | 请求与响应 Schema，以及唯一的接口绑定表 `routes.json` |
 | `src/unity_mcp/generated/` | 生成的 Python 协议模型 |
-| `unity-package/Editor/Protocol/Generated/` | 生成的全部 C# 请求、动作和共用数据类型及基础校验 |
+| `unity-package/Editor/Protocol/Generated/` | 生成的 C# 请求、响应、共用数据类型及校验 |
 | `unity-package/Editor/Handlers/Base/PrefabUtils/` | 多个 Handler 共用的节点构建、布局、保存和备份工具 |
 | `unity-package/Editor/Handlers/TypeHandlers/CreateUiPrefabRequestHandler.cs` | 创建 Handler，引用生成的协议类型 |
 | `unity-package/Editor/Handlers/TypeHandlers/BatchEditUiPrefab/` | 批量编辑 Handler、编辑生命周期、节点工具及 Operations 子操作；参数引用生成的协议类型 |
@@ -245,8 +376,9 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 | `unity-package/Editor/UiPrefabVersion.cs` | Handler 与资源查询共用的 Prefab 版本工具 |
 | `skills/unity-ui/` | Agent 的 UI 操作指引与示例 |
 | `scripts/check_mcp.py` | 基础 MCP 连接流程检查 |
+| `unity-package/Tests/Editor/` | Unity EditMode 协议序列化与真实 Prefab 编辑测试 |
 
-所有 JSON 请求的字段、默认值和基础约束统一维护在 `protocol/*.schema.json`，生成 Python 与 C# 类型及校验；树结构、资源操作等业务校验继续手写。health/project-info 没有请求体。协议约定见 [Protocol README](protocol/README.md)，新增接口、资源类型和编辑动作的步骤见 [Editor 扩展说明](unity-package/Editor/README.md#新增功能方法)。
+请求和响应的字段、默认值及基础约束统一维护在 `protocol/*.schema.json`。`protocol/routes.json` 生成 Python 路径、方法和模型表，以及 Unity 的“方法、路径 → Type”；生成代码集中在两端的 Generated 目录。`Handlers/EditorRequestRegistry.cs` 中的“Type → Handler”保持手写，生成时不会覆盖。连接层引用生成常量，无需重复修改路径。Python 接收响应时严格校验；业务逻辑继续手写。协议约定见 [Protocol README](protocol/README.md)，扩展步骤见 [Editor 扩展说明](unity-package/Editor/README.md#新增功能方法)。
 
 ## 检查与验证范围
 
@@ -257,6 +389,8 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 ```
 
 生成文件随协议一起提交，不要手改。通过后等待 Unity 编译完成，重连 MCP 刷新参数，并验证真实请求的成功、失败及保存行为。
+
+仓库的 `.github/workflows/protocol-check.yml` 在推送、创建或更新 PR 时自动运行 `generate_protocol.py --check` 和 `check_protocol.py`，也可在 GitHub Actions 页面手动运行。CI 只检查，不重新生成文件；缺失、过期或测试失败时，`Protocol checks` 会报错。将这些文件提交并推送到 GitHub 后生效；若要阻止检查失败的 PR 合并，在分支保护或规则集中把 `Protocol checks` 设为必需检查。本地复现 CI 可先执行 `python -m pip install ".[test]"`，再运行上述两条检查命令。
 
 基础 MCP 连接检查，默认使用临时项目和 HTTP 模拟服务：
 
@@ -271,5 +405,7 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 ```
 
 该脚本覆盖连接、切换、失败恢复和进程隔离，不是所有 UI 工具的集成测试。
+
+Unity 内的自动化测试位于 `unity-package/Tests/Editor/`，覆盖真实 JsonUtility 解析、Prefab 创建、五种编辑动作、备份恢复和派生响应序列化。按[测试运行说明](unity-package/Tests/README.md)在目标项目启用包测试，然后在 Test Runner 的 EditMode 中运行；当前 GitHub 协议 CI 不运行这些需要 Unity Editor 的测试。
 
 项目曾对截图及创建/批量保存的边距、根缩放和激活状态做过 Unity 实测，也有编译及模拟测试。后续新增能力、完整资源类型组合、恢复流程和交互行为仍需按具体改动联调；不能将历史检查通过视为全部功能持续通过。

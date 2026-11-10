@@ -22,15 +22,7 @@ namespace UnityMcp.Editor
 
         static void Validate(ImportUiImageRequest request) => RequestProtocolValidation.Validate(request);
 
-        [Serializable] sealed class Reply
-        {
-            public string id, instance_id, asset_path, guid, error, filter_mode;
-            public bool ok;
-            public int width, height;
-            public float pixels_per_unit;
-            public Vector4 border;
-        }
-        static string Error(string id, string message) => JsonUtility.ToJson(new Reply {
+        static string Error(string id, string message) => JsonUtility.ToJson(new ImportUiImageReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message
         });
         static void CheckDeadline(ImportUiImageRequest request)
@@ -104,7 +96,7 @@ namespace UnityMcp.Editor
                 if (sprite == null || sprite.rect.width != width || sprite.rect.height != height
                     || sprite.border != border || !Mathf.Approximately(sprite.pixelsPerUnit, request.pixels_per_unit))
                     throw new Exception("Imported Sprite settings differ; check project AssetPostprocessors/platform overrides");
-                return JsonUtility.ToJson(new Reply {
+                return JsonUtility.ToJson(new ImportUiImageReply {
                     id = request.id, instance_id = EditorInstanceInfo.InstanceId, ok = true,
                     asset_path = request.asset_path, guid = AssetDatabase.AssetPathToGUID(request.asset_path),
                     width = width, height = height, border = sprite.border, pixels_per_unit = sprite.pixelsPerUnit,

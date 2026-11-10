@@ -12,18 +12,21 @@ namespace UnityMcp.Editor
         double Deadline { get; }
     }
 
-    [Serializable] internal sealed class ReplyHeader
-    {
-        public string id, instance_id, error;
-        public bool ok;
-    }
-
     internal static class HttpRequestUtility
     {
         public static async Task<T> Read<T>(HttpListenerContext context, int bodyLimit = 256 * 1024) where T : class
         {
             string json = await HttpRequestBodyReader.Read(context, bodyLimit).ConfigureAwait(false);
             return JsonUtility.FromJson<T>(json) ?? throw new Exception("Missing request");
+        }
+        internal static void ValidateEnvelope(IEditorRequest request)
+        {
+            if (request.Id == null || request.Id.Length != 32 || !request.Id.All(Uri.IsHexDigit))
+                throw new Exception("Invalid request ID");
+            double now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+            if (double.IsNaN(request.Deadline) || double.IsInfinity(request.Deadline)
+                || request.Deadline <= now || request.Deadline > now + 60)
+                throw new Exception("Expired or invalid request deadline");
         }
 
         // Shared orchestration; handlers own their request type, validation and execution.
@@ -35,12 +38,7 @@ namespace UnityMcp.Editor
             try
             {
                 request = await Read<T>(context, bodyLimit).ConfigureAwait(false);
-                if (request.Id == null || request.Id.Length != 32 || !request.Id.All(Uri.IsHexDigit))
-                    throw new Exception("Invalid request ID");
-                double now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
-                if (double.IsNaN(request.Deadline) || double.IsInfinity(request.Deadline)
-                    || request.Deadline <= now || request.Deadline > now + 60)
-                    throw new Exception("Expired or invalid request deadline");
+                ValidateEnvelope(request);
                 validate?.Invoke(request);
             }
             catch (HttpRequestBodyReader.ReadException e)

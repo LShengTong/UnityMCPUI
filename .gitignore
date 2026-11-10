@@ -55,6 +55,7 @@ coverage.xml
 !.env.template
 
 # Temporary files and OS metadata
+.backups/
 *.log
 *.tmp
 *.bak

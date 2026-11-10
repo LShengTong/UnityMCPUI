@@ -7,10 +7,6 @@ namespace UnityMcp.Editor
 {
     internal static class UiAssetQueryUtility
     {
-        [Serializable] internal sealed class AssetReference
-        {
-            public string name, asset_path, guid, local_id, asset_type;
-        }
         public static void CheckDeadline(double deadline)
         {
             if (deadline <= DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0)

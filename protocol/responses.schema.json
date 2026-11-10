@@ -1,0 +1,3280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Vector2Reply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "x-csharp-external": "UnityEngine.Vector2"
+    },
+    "Vector3Reply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
+      "x-csharp-external": "UnityEngine.Vector3"
+    },
+    "Vector4Reply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "z",
+        "w"
+      ],
+      "x-csharp-external": "UnityEngine.Vector4"
+    },
+    "RectReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ]
+    },
+    "AssetReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "guid": {
+          "type": "string"
+        },
+        "local_id": {
+          "type": "string"
+        },
+        "asset_type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "asset_path",
+        "guid",
+        "local_id",
+        "asset_type"
+      ]
+    },
+    "BackupEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backup_id": {
+          "type": "string"
+        },
+        "asset_path": {
+          "type": "string"
+        },
+        "asset_guid": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "before_version": {
+          "type": "string"
+        },
+        "after_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "backup_id",
+        "asset_path",
+        "asset_guid",
+        "created_at",
+        "summary",
+        "before_version",
+        "after_version",
+        "sha256"
+      ]
+    },
+    "SpriteDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "texture_size": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "pivot": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "rect": {
+          "$ref": "#/$defs/RectReply"
+        },
+        "border": {
+          "$ref": "#/$defs/Vector4Reply"
+        },
+        "pixels_per_unit": {
+          "type": "number"
+        },
+        "texture_path": {
+          "type": "string"
+        },
+        "filter_mode": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "size",
+        "texture_size",
+        "pivot",
+        "rect",
+        "border",
+        "pixels_per_unit",
+        "texture_path",
+        "filter_mode"
+      ]
+    },
+    "FontDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "type": "string"
+        },
+        "style": {
+          "type": "string"
+        },
+        "atlas_population_mode": {
+          "type": "string"
+        },
+        "source_font_path": {
+          "type": "string"
+        },
+        "atlas_width": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "atlas_height": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "atlas_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fallbacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AssetReference"
+          }
+        },
+        "fallbacks_truncated": {
+          "type": "boolean"
+        },
+        "text_checked": {
+          "type": "boolean"
+        },
+        "all_characters_present": {
+          "type": "boolean"
+        },
+        "search_fallbacks": {
+          "type": "boolean"
+        },
+        "missing_characters": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "default": null
+        },
+        "missing_codepoints": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "default": null
+        },
+        "coverage_mode": {
+          "type": "string",
+          "default": "existing_glyphs_only"
+        }
+      },
+      "required": [
+        "family",
+        "style",
+        "atlas_population_mode",
+        "source_font_path",
+        "atlas_width",
+        "atlas_height",
+        "atlas_count",
+        "fallbacks",
+        "fallbacks_truncated",
+        "text_checked",
+        "all_characters_present",
+        "search_fallbacks",
+        "coverage_mode"
+      ]
+    },
+    "PrefabProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "value": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "object_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "PrefabComponentInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "properties_truncated": {
+          "type": "boolean"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrefabProperty"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "enabled",
+        "properties_truncated",
+        "properties"
+      ]
+    },
+    "PrefabRectInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "anchor_min": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "anchor_max": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "pivot": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "size_delta": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "offset_min": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "offset_max": {
+          "$ref": "#/$defs/Vector2Reply"
+        },
+        "anchored_position": {
+          "$ref": "#/$defs/Vector3Reply"
+        },
+        "local_scale": {
+          "$ref": "#/$defs/Vector3Reply"
+        },
+        "local_euler_angles": {
+          "$ref": "#/$defs/Vector3Reply"
+        }
+      },
+      "required": [
+        "anchor_min",
+        "anchor_max",
+        "pivot",
+        "size_delta",
+        "offset_min",
+        "offset_max",
+        "anchored_position",
+        "local_scale",
+        "local_euler_angles"
+      ]
+    },
+    "PrefabNodeInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "index_path": {
+          "type": "string"
+        },
+        "parent_index_path": {
+          "type": "string"
+        },
+        "active_self": {
+          "type": "boolean"
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrefabRectInfo"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ui": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrefabComponentInfo"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "index_path",
+        "parent_index_path",
+        "active_self",
+        "components",
+        "ui"
+      ]
+    },
+    "PrefabDetails": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_path": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{64}$"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrefabNodeInfo"
+          }
+        }
+      },
+      "required": [
+        "asset_path",
+        "version",
+        "truncated",
+        "total",
+        "nodes"
+      ]
+    },
+    "UiAssetSearchResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "next_offset": {
+          "type": "integer",
+          "minimum": -1,
+          "default": -1
+        },
+        "assets": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/AssetReference"
+          },
+          "default": null
+        }
+      },
+      "required": [
+        "index",
+        "ok"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_type",
+              "total",
+              "next_offset",
+              "assets"
+            ],
+            "properties": {
+              "asset_type": {
+                "enum": [
+                  "ui_prefab",
+                  "sprite",
+                  "tmp_font"
+                ]
+              },
+              "assets": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "UiAssetInspectionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssetReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sprite": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SpriteDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "font": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FontDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "prefab": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrefabDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "index",
+        "ok"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_type",
+              "asset"
+            ],
+            "properties": {
+              "asset_type": {
+                "enum": [
+                  "ui_prefab",
+                  "sprite",
+                  "tmp_font"
+                ]
+              },
+              "asset": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              },
+              "asset_type": {
+                "const": "sprite"
+              }
+            },
+            "required": [
+              "ok",
+              "asset_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "sprite"
+            ],
+            "properties": {
+              "sprite": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              },
+              "asset_type": {
+                "const": "tmp_font"
+              }
+            },
+            "required": [
+              "ok",
+              "asset_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "font"
+            ],
+            "properties": {
+              "font": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              },
+              "asset_type": {
+                "const": "ui_prefab"
+              }
+            },
+            "required": [
+              "ok",
+              "asset_type"
+            ]
+          },
+          "then": {
+            "required": [
+              "prefab"
+            ],
+            "properties": {
+              "prefab": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      ],
+      "x-csharp-omit": [
+        "sprite",
+        "font",
+        "prefab"
+      ]
+    },
+    "FindUiAssetsReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "results": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/UiAssetSearchResult"
+          },
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "results"
+            ],
+            "properties": {
+              "results": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "InspectUiAssetsReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "results": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/UiAssetInspectionResult"
+          },
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "results"
+            ],
+            "properties": {
+              "results": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CreateUiPrefabReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "warning": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "node_count": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "node_count"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PreviewUiPrefabReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "png_base64": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "version",
+              "png_base64",
+              "width",
+              "height"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "png_base64": {
+                "type": "string",
+                "minLength": 1
+              },
+              "width": {
+                "minimum": 64,
+                "maximum": 2048
+              },
+              "height": {
+                "minimum": 64,
+                "maximum": 2048
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ImportUiImageReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "guid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "filter_mode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "pixels_per_unit": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        },
+        "border": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Vector4Reply"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "guid",
+              "filter_mode",
+              "width",
+              "height",
+              "pixels_per_unit",
+              "border"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "guid": {
+                "type": "string",
+                "minLength": 1
+              },
+              "width": {
+                "minimum": 1
+              },
+              "height": {
+                "minimum": 1
+              },
+              "pixels_per_unit": {
+                "exclusiveMinimum": 0
+              },
+              "filter_mode": {
+                "enum": [
+                  "Point",
+                  "Bilinear",
+                  "point",
+                  "bilinear"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ListUiBackupsReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "next_offset": {
+          "type": "integer",
+          "minimum": -1,
+          "default": -1
+        },
+        "backups": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/BackupEntry"
+          },
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "total",
+              "next_offset",
+              "backups"
+            ],
+            "properties": {
+              "backups": {
+                "type": "array"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "RestoreUiPrefabReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "backup_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "restored_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "warning": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "saved": {
+          "type": "boolean",
+          "default": false
+        },
+        "rolled_back": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "version",
+              "backup_id",
+              "restored_from",
+              "saved"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "backup_id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{32}$"
+              },
+              "restored_from": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{32}$"
+              },
+              "saved": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "BatchEditUiPrefabReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "phase": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "failed_action": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "backup_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "backup_warning": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "saved": {
+          "type": "boolean",
+          "default": false
+        },
+        "executed_operations": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "changed_properties": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "node_operations": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "added_components": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "failed_operation_index": {
+          "type": "integer",
+          "minimum": -1,
+          "default": -1
+        },
+        "created_nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiCreatedNode"
+          },
+          "default": [],
+          "maxItems": 128
+        },
+        "added_scripts": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "assigned_references": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "version",
+              "phase",
+              "backup_id",
+              "saved",
+              "executed_operations",
+              "changed_properties",
+              "node_operations",
+              "added_components"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{64}$"
+              },
+              "phase": {
+                "const": "complete"
+              },
+              "backup_id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{32}$"
+              },
+              "saved": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "HealthReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "protocol": {
+          "type": "integer"
+        },
+        "project_path": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "protocol",
+        "project_path",
+        "instance_id"
+      ],
+      "x-response": true
+    },
+    "ProjectInfoReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "protocol": {
+          "type": "integer"
+        },
+        "project_path": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "project_name": {
+          "type": "string"
+        },
+        "unity_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "default": "editor"
+        }
+      },
+      "required": [
+        "protocol",
+        "project_path",
+        "instance_id",
+        "project_name",
+        "unity_version",
+        "source"
+      ],
+      "x-response": true
+    },
+    "SpriteInspectionReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssetReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sprite": {
+          "$ref": "#/$defs/SpriteDetails"
+        }
+      },
+      "required": [
+        "index",
+        "ok"
+      ],
+      "x-csharp-base": "UiAssetInspectionResult"
+    },
+    "FontInspectionReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssetReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "font": {
+          "$ref": "#/$defs/FontDetails"
+        }
+      },
+      "required": [
+        "index",
+        "ok"
+      ],
+      "x-csharp-base": "UiAssetInspectionResult"
+    },
+    "PrefabInspectionReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssetReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "prefab": {
+          "$ref": "#/$defs/PrefabDetails"
+        }
+      },
+      "required": [
+        "index",
+        "ok"
+      ],
+      "x-csharp-base": "UiAssetInspectionResult"
+    },
+    "QueryReplyHeader": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ]
+    },
+    "UiCreatedNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        }
+      },
+      "required": [
+        "operation_index",
+        "index_path"
+      ]
+    },
+    "CompilationDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "message": {
+          "type": "string"
+        },
+        "assembly": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "column",
+        "message",
+        "assembly"
+      ]
+    },
+    "CompilationStatusReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-response": true,
+      "properties": {
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "is_compiling": {
+          "type": "boolean"
+        },
+        "is_updating": {
+          "type": "boolean"
+        },
+        "compilation_revision": {
+          "type": "string"
+        },
+        "has_compilation_result": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CompilationDiagnostic"
+          },
+          "maxItems": 200
+        },
+        "errors_truncated": {
+          "type": "boolean"
+        },
+        "refresh_id": {
+          "type": "string"
+        },
+        "refresh_pending": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "instance_id",
+        "is_compiling",
+        "is_updating",
+        "compilation_revision",
+        "has_compilation_result",
+        "errors",
+        "errors_truncated",
+        "refresh_id",
+        "refresh_pending"
+      ]
+    },
+    "RefreshAssetsReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "refresh_requested": {
+          "type": "boolean",
+          "default": false
+        },
+        "refresh_id": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "refresh_requested",
+              "refresh_id"
+            ],
+            "properties": {
+              "refresh_requested": {
+                "const": true
+              },
+              "refresh_id": {
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "PlayTestInstanceInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test_instance_id": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "prefab_path": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "scene_path": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "test_instance_id",
+        "prefab_path",
+        "scene_path"
+      ]
+    },
+    "PlayStatusReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "is_playing": {
+          "type": "boolean"
+        },
+        "is_changing": {
+          "type": "boolean"
+        },
+        "is_paused": {
+          "type": "boolean"
+        },
+        "session_id": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "frame_count": {
+          "type": "integer",
+          "default": 0
+        },
+        "test_running": {
+          "type": "boolean",
+          "default": false
+        },
+        "test_instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PlayTestInstanceInfo"
+          },
+          "default": []
+        },
+        "test_mode": {
+          "type": "string",
+          "enum": [
+            "current",
+            "isolated"
+          ],
+          "default": "current"
+        },
+        "test_scene_path": {
+          "type": "string",
+          "default": ""
+        },
+        "test_parent_path": {
+          "type": "string",
+          "default": ""
+        },
+        "scene_restore_pending": {
+          "type": "boolean",
+          "default": false
+        },
+        "scene_restore_error": {
+          "type": "string",
+          "default": ""
+        },
+        "test_scene_error": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "instance_id",
+        "is_playing",
+        "is_changing",
+        "is_paused",
+        "session_id",
+        "frame_count",
+        "test_running",
+        "test_instances"
+      ],
+      "x-response": true
+    },
+    "RuntimeReferenceInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "component_type": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "field_path": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "target_path": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "target_type": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "component_type",
+        "field_path",
+        "target_path",
+        "target_type"
+      ]
+    },
+    "RuntimeUiNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "scene_path": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "active_self": {
+          "type": "boolean",
+          "default": false
+        },
+        "active_in_hierarchy": {
+          "type": "boolean",
+          "default": false
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "default": []
+        },
+        "has_text": {
+          "type": "boolean",
+          "default": false
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4096,
+          "default": ""
+        },
+        "has_selectable": {
+          "type": "boolean",
+          "default": false
+        },
+        "interactable": {
+          "type": "boolean",
+          "default": false
+        },
+        "is_canvas": {
+          "type": "boolean",
+          "default": false
+        },
+        "is_event_system": {
+          "type": "boolean",
+          "default": false
+        },
+        "ui": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PrefabComponentInfo"
+          },
+          "default": []
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuntimeReferenceInfo"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "name",
+        "path",
+        "scene_path",
+        "active_self",
+        "active_in_hierarchy",
+        "components",
+        "has_text",
+        "text",
+        "has_selectable",
+        "interactable",
+        "is_canvas",
+        "is_event_system",
+        "ui",
+        "references"
+      ]
+    },
+    "UiTestStepResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer",
+          "default": 0
+        },
+        "action": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "ok": {
+          "type": "boolean",
+          "default": false
+        },
+        "expected": {
+          "type": "string",
+          "maxLength": 4096,
+          "default": ""
+        },
+        "actual": {
+          "type": "string",
+          "maxLength": 4096,
+          "default": ""
+        },
+        "error": {
+          "type": "string",
+          "maxLength": 2048,
+          "default": ""
+        },
+        "frame_count": {
+          "type": "integer",
+          "default": 0
+        },
+        "png_base64": {
+          "type": "string",
+          "maxLength": 16777216,
+          "default": ""
+        },
+        "width": {
+          "type": "integer",
+          "default": 0
+        },
+        "height": {
+          "type": "integer",
+          "default": 0
+        },
+        "interaction_mode": {
+          "type": "string",
+          "maxLength": 512,
+          "default": "",
+          "enum": [
+            "callback"
+          ]
+        }
+      },
+      "required": [
+        "index",
+        "action",
+        "path",
+        "ok",
+        "expected",
+        "actual",
+        "error",
+        "frame_count",
+        "png_base64",
+        "width",
+        "height",
+        "interaction_mode"
+      ]
+    },
+    "EnterPlayModeReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "transition_requested": {
+          "type": "boolean",
+          "default": false
+        },
+        "session_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "test_mode": {
+          "type": "string",
+          "enum": [
+            "current",
+            "isolated"
+          ],
+          "default": "current"
+        },
+        "test_scene_path": {
+          "type": "string",
+          "default": ""
+        },
+        "test_parent_path": {
+          "type": "string",
+          "default": ""
+        },
+        "scene_restore_pending": {
+          "type": "boolean",
+          "default": false
+        },
+        "scene_restore_error": {
+          "type": "string",
+          "default": ""
+        },
+        "test_scene_error": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "transition_requested"
+            ]
+          }
+        }
+      ]
+    },
+    "ExitPlayModeReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "transition_requested": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "transition_requested"
+            ]
+          }
+        }
+      ]
+    },
+    "InspectRuntimeUiReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "session_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RuntimeUiNode"
+          },
+          "default": []
+        },
+        "truncated": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "session_id",
+              "nodes",
+              "truncated"
+            ]
+          }
+        }
+      ]
+    },
+    "MountTestPrefabReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "session_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "test_instance_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "scene_path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "session_id",
+              "test_instance_id",
+              "scene_path"
+            ]
+          }
+        }
+      ]
+    },
+    "ClearTestInstancesReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "cleared_instances": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "cleared_instances"
+            ]
+          }
+        }
+      ]
+    },
+    "RunUiTestReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "session_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "test_instance_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "passed": {
+          "type": "boolean",
+          "default": false
+        },
+        "failed_step_index": {
+          "type": "integer",
+          "default": -1
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiTestStepResult"
+          },
+          "default": []
+        },
+        "interaction_mode": {
+          "type": "string",
+          "default": "callback",
+          "enum": [
+            "callback"
+          ]
+        },
+        "saved_scene": {
+          "type": "boolean",
+          "default": false,
+          "enum": [
+            false
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "session_id",
+              "test_instance_id",
+              "passed",
+              "steps",
+              "interaction_mode",
+              "saved_scene"
+            ],
+            "properties": {
+              "passed": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CreateTmpFontReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "guid": {
+          "type": "string",
+          "default": ""
+        },
+        "population_mode": {
+          "type": "string",
+          "default": ""
+        },
+        "character_count": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0
+        },
+        "all_characters_present": {
+          "type": "boolean",
+          "default": false
+        },
+        "missing_codepoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "guid",
+              "population_mode",
+              "character_count",
+              "all_characters_present",
+              "missing_codepoints"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "guid": {
+                "type": "string",
+                "minLength": 1
+              },
+              "population_mode": {
+                "type": "string",
+                "enum": [
+                  "static",
+                  "dynamic"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "UpdateTmpFontCharactersReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "asset_path": {
+          "type": "string",
+          "default": ""
+        },
+        "guid": {
+          "type": "string",
+          "default": ""
+        },
+        "population_mode": {
+          "type": "string",
+          "default": ""
+        },
+        "character_count": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0
+        },
+        "all_characters_present": {
+          "type": "boolean",
+          "default": false
+        },
+        "missing_codepoints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "asset_path",
+              "guid",
+              "population_mode",
+              "character_count",
+              "all_characters_present",
+              "missing_codepoints"
+            ],
+            "properties": {
+              "asset_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "guid": {
+                "type": "string",
+                "minLength": 1
+              },
+              "population_mode": {
+                "type": "string",
+                "enum": [
+                  "static",
+                  "dynamic"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

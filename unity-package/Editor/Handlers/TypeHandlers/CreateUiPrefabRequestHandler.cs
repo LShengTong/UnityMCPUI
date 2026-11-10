@@ -18,11 +18,11 @@ namespace UnityMcp.Editor
             HttpRequestUtility.Handle<CreateUiPrefabRequest>(context, tasks, Execute, Error,
                 request => RequestProtocolValidation.Validate(request));
 
-        static string Error(string id, string message) => JsonUtility.ToJson(new UiPrefabBridge.Reply {
+        static string Error(string id, string message) => JsonUtility.ToJson(new CreateUiPrefabReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, ok = false, error = message
         });
 
-        static string Execute(CreateUiPrefabRequest request)
+        internal static string Execute(CreateUiPrefabRequest request)
         {
             try
             {

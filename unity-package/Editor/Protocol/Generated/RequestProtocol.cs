@@ -4,55 +4,6 @@ using System.Text.RegularExpressions;
 
 namespace UnityMcp.Editor
 {
-    [Serializable] public sealed class UiOffset
-    {
-        public float x = float.NaN;
-        public float y = float.NaN;
-    }
-
-    [Serializable] public sealed class UiPrefabNode
-    {
-        public string name;
-        public string kind = "panel";
-        public float width = 320f;
-        public float height = 80f;
-        public float x = 0f;
-        public float y = 0f;
-        public string anchor = "center";
-        public UiOffset offset_min;
-        public bool has_offset_min;
-        public UiOffset offset_max;
-        public bool has_offset_max;
-        public string color = "#FFFFFF";
-        public string text = "";
-        public string text_color = "#202020";
-        public float font_size = 24f;
-        public string font_path = "";
-        public string sprite_path = "";
-        public string layout = "none";
-        public float spacing = 12f;
-        public int padding = 16;
-        public UiPrefabNode[] children = new UiPrefabNode[] {  };
-    }
-
-    [Serializable] public sealed class UiPrefabSpec
-    {
-        public string name;
-        public float reference_width = 1920f;
-        public float reference_height = 1080f;
-        public UiPrefabNode[] children;
-    }
-
-    [Serializable] internal sealed class CreateUiPrefabRequest : IEditorRequest
-    {
-        public string id;
-        public double deadline;
-        public string output_path;
-        public UiPrefabSpec spec;
-        string IEditorRequest.Id => id;
-        double IEditorRequest.Deadline => deadline;
-    }
-
     [Serializable] public sealed class UiAssetSearch
     {
         public string asset_type;
@@ -129,6 +80,16 @@ namespace UnityMcp.Editor
         public string content_path = "";
         public bool horizontal = false;
         public bool vertical = true;
+        public string name = "";
+        public string prefab_path;
+        public string script_path;
+        public string component_type;
+        public int component_index = -1;
+        public string field_path;
+        public string target_path = "";
+        public string target_component = "";
+        public int target_component_index = -1;
+        public bool clear = false;
     }
 
     [Serializable] internal sealed class FindUiAssetsRequest : IEditorRequest
@@ -213,63 +174,279 @@ namespace UnityMcp.Editor
         public string value;
     }
 
+    [Serializable] public sealed class UiNodeDuplication
+    {
+        public string action;
+        public string index_path;
+        public string parent_path;
+        public string name = "";
+        public int sibling_index = -1;
+    }
+
+    [Serializable] public sealed class UiPrefabInstantiation
+    {
+        public string action;
+        public string prefab_path;
+        public string parent_path;
+        public string name = "";
+        public int sibling_index = -1;
+    }
+
+    [Serializable] public sealed class UiScriptAddition
+    {
+        public string action;
+        public string index_path;
+        public string script_path;
+    }
+
+    [Serializable] public sealed class UiReferenceAssignment
+    {
+        public string action;
+        public string index_path;
+        public string component_type;
+        public int component_index = -1;
+        public string field_path;
+        public string target_path = "";
+        public string target_component = "";
+        public int target_component_index = -1;
+        public bool clear = false;
+    }
+
+    [Serializable] internal sealed class RefreshAssetsRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class EnterPlayModeRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string mode = "isolated";
+        public float reference_width = 1920f;
+        public float reference_height = 1080f;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class ExitPlayModeRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class InspectRuntimeUiRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string test_instance_id = "";
+        public string scene_name = "";
+        public string path = "";
+        public int max_nodes = 200;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class MountTestPrefabRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string prefab_path;
+        public string parent_path = "";
+        public string scene_name = "";
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class ClearTestInstancesRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string test_instance_id = "";
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] public sealed class InvokeButtonStep
+    {
+        public string action;
+        public string path = "0";
+    }
+
+    [Serializable] public sealed class SetInputTextStep
+    {
+        public string action;
+        public string path = "0";
+        public string text;
+        public bool notify = true;
+    }
+
+    [Serializable] public sealed class AssertUiStep
+    {
+        public string action;
+        public string path = "0";
+        public string property;
+        public string expected;
+        public string component_type = "";
+        public string field_path = "";
+    }
+
+    [Serializable] public sealed class WaitUiConditionStep
+    {
+        public string action;
+        public string path = "0";
+        public string property;
+        public string expected;
+        public string component_type = "";
+        public string field_path = "";
+        public float timeout_seconds = 2f;
+    }
+
+    [Serializable] public sealed class ScreenshotUiStep
+    {
+        public string action;
+        public int width = 0;
+        public int height = 0;
+    }
+
+    [Serializable] public sealed class UiTestStep
+    {
+        public string action;
+        public string path = "0";
+        public string text;
+        public bool notify = true;
+        public string property;
+        public string expected;
+        public string component_type = "";
+        public string field_path = "";
+        public float timeout_seconds = 2f;
+        public int width = 0;
+        public int height = 0;
+    }
+
+    [Serializable] internal sealed class RunUiTestRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string test_instance_id;
+        public UiTestStep[] steps;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class CreateTmpFontRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string source_font_path;
+        public string asset_path;
+        public string characters = "";
+        public string population_mode = "dynamic";
+        public int sampling_point_size = 48;
+        public int atlas_size = 1024;
+        public int padding = 5;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class UpdateTmpFontCharactersRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string asset_path;
+        public string characters;
+        public string mode = "append";
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class CreateUiPrefabRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string output_path;
+        public UiPrefabSpec spec;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] public sealed class UiOffset
+    {
+        public float x = float.NaN;
+        public float y = float.NaN;
+    }
+
+    [Serializable] public sealed class UiPrefabNode
+    {
+        public string name;
+        public string kind = "panel";
+        public float width = 320f;
+        public bool has_width;
+        public float height = 80f;
+        public bool has_height;
+        public float x = 0f;
+        public bool has_x;
+        public float y = 0f;
+        public bool has_y;
+        public string anchor = "center";
+        public bool has_anchor;
+        public UiOffset offset_min;
+        public bool has_offset_min;
+        public UiOffset offset_max;
+        public bool has_offset_max;
+        public string color = "#FFFFFF";
+        public string text = "";
+        public string text_color = "#202020";
+        public float font_size = 24f;
+        public string font_path = "";
+        public string sprite_path = "";
+        public string layout = "none";
+        public float spacing = 12f;
+        public int padding = 16;
+        public UiPrefabNode[] children = new UiPrefabNode[] {  };
+        public string prefab_path = "";
+        public string text_alignment = "Center";
+        public bool word_wrap = true;
+        public bool auto_size = false;
+        public float font_size_min = 18f;
+        public float font_size_max = 72f;
+        public string text_overflow = "Overflow";
+        public float line_spacing = 0f;
+        public string image_type = "Simple";
+        public bool preserve_aspect = false;
+        public string fill_method = "Radial360";
+        public int fill_origin = 0;
+        public float fill_amount = 1f;
+        public bool fill_clockwise = true;
+        public bool raycast_target = false;
+        public bool has_raycast_target;
+        public string child_alignment = "MiddleCenter";
+        public bool child_control_width = true;
+        public bool child_control_height = true;
+        public bool child_force_expand_width = false;
+        public bool child_force_expand_height = false;
+        public bool child_scale_width = false;
+        public bool child_scale_height = false;
+        public string grid_constraint = "Flexible";
+        public int grid_constraint_count = 2;
+        public string grid_start_corner = "UpperLeft";
+        public string grid_start_axis = "Horizontal";
+        public UiOffset grid_cell_size = new UiOffset { x = 100f, y = 100f };
+        public UiOffset grid_spacing = new UiOffset { x = 0f, y = 0f };
+    }
+
+    [Serializable] public sealed class UiPrefabSpec
+    {
+        public string name;
+        public UiPrefabNode[] children;
+    }
+
     internal static class RequestProtocolValidation
     {
-        public static void Validate(UiOffset value, int depth = 0)
-        {
-            if (value == null) throw new Exception("Missing UiOffset");
-            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
-            if (float.IsNaN(value.x) || float.IsInfinity(value.x) || value.x < -16384 || value.x > 16384) throw new Exception("Invalid UiOffset.x");
-            if (float.IsNaN(value.y) || float.IsInfinity(value.y) || value.y < -16384 || value.y > 16384) throw new Exception("Invalid UiOffset.y");
-        }
-
-        public static void Validate(UiPrefabNode value, int depth = 0)
-        {
-            if (value == null) throw new Exception("Missing UiPrefabNode");
-            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
-            if (value.name == null || (value.name != null && value.name.Length < 1) || (value.name != null && value.name.Length > 80) || (value.name != null && !Regex.IsMatch(value.name, "^[^/\\\\\\x00-\\x1f]+$"))) throw new Exception("Invalid UiPrefabNode.name");
-            if ((value.kind != "panel" && value.kind != "image" && value.kind != "text" && value.kind != "button")) throw new Exception("Invalid UiPrefabNode.kind");
-            if (float.IsNaN(value.width) || float.IsInfinity(value.width) || value.width > 16384 || value.width <= 0) throw new Exception("Invalid UiPrefabNode.width");
-            if (float.IsNaN(value.height) || float.IsInfinity(value.height) || value.height > 16384 || value.height <= 0) throw new Exception("Invalid UiPrefabNode.height");
-            if (float.IsNaN(value.x) || float.IsInfinity(value.x) || value.x < -16384 || value.x > 16384) throw new Exception("Invalid UiPrefabNode.x");
-            if (float.IsNaN(value.y) || float.IsInfinity(value.y) || value.y < -16384 || value.y > 16384) throw new Exception("Invalid UiPrefabNode.y");
-            if ((value.anchor != "top_left" && value.anchor != "top_center" && value.anchor != "top_right" && value.anchor != "center_left" && value.anchor != "center" && value.anchor != "center_right" && value.anchor != "bottom_left" && value.anchor != "bottom_center" && value.anchor != "bottom_right" && value.anchor != "stretch_horizontal_top" && value.anchor != "stretch_horizontal_center" && value.anchor != "stretch_horizontal_bottom" && value.anchor != "stretch_vertical_left" && value.anchor != "stretch_vertical_center" && value.anchor != "stretch_vertical_right" && value.anchor != "stretch")) throw new Exception("Invalid UiPrefabNode.anchor");
-            if (value.has_offset_min) Validate(value.offset_min, depth + 1);
-            if (value.has_offset_max) Validate(value.offset_max, depth + 1);
-            if ((value.color != null && !Regex.IsMatch(value.color, "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"))) throw new Exception("Invalid UiPrefabNode.color");
-            if ((value.text != null && value.text.Length > 4096)) throw new Exception("Invalid UiPrefabNode.text");
-            if ((value.text_color != null && !Regex.IsMatch(value.text_color, "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"))) throw new Exception("Invalid UiPrefabNode.text_color");
-            if (float.IsNaN(value.font_size) || float.IsInfinity(value.font_size) || value.font_size > 512 || value.font_size <= 0) throw new Exception("Invalid UiPrefabNode.font_size");
-            if ((value.layout != "none" && value.layout != "vertical" && value.layout != "horizontal")) throw new Exception("Invalid UiPrefabNode.layout");
-            if (float.IsNaN(value.spacing) || float.IsInfinity(value.spacing) || value.spacing < 0 || value.spacing > 4096) throw new Exception("Invalid UiPrefabNode.spacing");
-            if (value.padding < 0 || value.padding > 4096) throw new Exception("Invalid UiPrefabNode.padding");
-            if ((value.children != null && value.children.Length > 128)) throw new Exception("Invalid UiPrefabNode.children");
-            if (value.children != null)
-                foreach (var item in value.children) Validate(item, depth + 1);
-        }
-
-        public static void Validate(UiPrefabSpec value, int depth = 0)
-        {
-            if (value == null) throw new Exception("Missing UiPrefabSpec");
-            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
-            if (value.name == null || (value.name != null && value.name.Length < 1) || (value.name != null && value.name.Length > 80) || (value.name != null && !Regex.IsMatch(value.name, "^[^/\\\\\\x00-\\x1f]+$"))) throw new Exception("Invalid UiPrefabSpec.name");
-            if (float.IsNaN(value.reference_width) || float.IsInfinity(value.reference_width) || value.reference_width > 16384 || value.reference_width <= 0) throw new Exception("Invalid UiPrefabSpec.reference_width");
-            if (float.IsNaN(value.reference_height) || float.IsInfinity(value.reference_height) || value.reference_height > 16384 || value.reference_height <= 0) throw new Exception("Invalid UiPrefabSpec.reference_height");
-            if (value.children == null || (value.children != null && value.children.Length < 1) || (value.children != null && value.children.Length > 128)) throw new Exception("Invalid UiPrefabSpec.children");
-            if (value.children != null)
-                foreach (var item in value.children) Validate(item, depth + 1);
-        }
-
-        public static void Validate(CreateUiPrefabRequest value, int depth = 0)
-        {
-            if (value == null) throw new Exception("Missing CreateUiPrefabRequest");
-            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
-            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid CreateUiPrefabRequest.id");
-            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid CreateUiPrefabRequest.deadline");
-            if (value.output_path == null) throw new Exception("Invalid CreateUiPrefabRequest.output_path");
-            Validate(value.spec, depth + 1);
-        }
-
         public static void Validate(UiAssetSearch value, int depth = 0)
         {
             if (value == null) throw new Exception("Missing UiAssetSearch");
@@ -324,7 +501,7 @@ namespace UnityMcp.Editor
             if (value == null) throw new Exception("Missing UiPropertyModification");
             if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
             if (value.index_path == null || (value.index_path != null && !Regex.IsMatch(value.index_path, "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"))) throw new Exception("Invalid UiPropertyModification.index_path");
-            if (value.property == null || (value.property != "name" && value.property != "active" && value.property != "text" && value.property != "font_size" && value.property != "text_color" && value.property != "font_path" && value.property != "sprite_path" && value.property != "color" && value.property != "anchored_position" && value.property != "size_delta" && value.property != "anchor" && value.property != "anchor_min" && value.property != "anchor_max" && value.property != "pivot" && value.property != "offset_min" && value.property != "offset_max" && value.property != "spacing" && value.property != "padding" && value.property != "interactable" && value.property != "image_type" && value.property != "preferred_width" && value.property != "preferred_height" && value.property != "min_width" && value.property != "min_height" && value.property != "flexible_width" && value.property != "flexible_height" && value.property != "horizontal_fit" && value.property != "vertical_fit" && value.property != "grid_cell_size" && value.property != "grid_spacing" && value.property != "scroll_horizontal" && value.property != "scroll_vertical")) throw new Exception("Invalid UiPropertyModification.property");
+            if (value.property == null || (value.property != "name" && value.property != "active" && value.property != "text" && value.property != "font_size" && value.property != "text_color" && value.property != "font_path" && value.property != "sprite_path" && value.property != "color" && value.property != "anchored_position" && value.property != "size_delta" && value.property != "anchor" && value.property != "anchor_min" && value.property != "anchor_max" && value.property != "pivot" && value.property != "offset_min" && value.property != "offset_max" && value.property != "spacing" && value.property != "padding" && value.property != "interactable" && value.property != "image_type" && value.property != "preferred_width" && value.property != "preferred_height" && value.property != "min_width" && value.property != "min_height" && value.property != "flexible_width" && value.property != "flexible_height" && value.property != "horizontal_fit" && value.property != "vertical_fit" && value.property != "grid_cell_size" && value.property != "grid_spacing" && value.property != "scroll_horizontal" && value.property != "scroll_vertical" && value.property != "text_alignment" && value.property != "word_wrap" && value.property != "auto_size" && value.property != "font_size_min" && value.property != "font_size_max" && value.property != "text_overflow" && value.property != "line_spacing" && value.property != "preserve_aspect" && value.property != "fill_method" && value.property != "fill_origin" && value.property != "fill_amount" && value.property != "fill_clockwise" && value.property != "raycast_target" && value.property != "child_alignment" && value.property != "child_control_width" && value.property != "child_control_height" && value.property != "child_force_expand_width" && value.property != "child_force_expand_height" && value.property != "child_scale_width" && value.property != "child_scale_height" && value.property != "grid_constraint" && value.property != "grid_constraint_count" && value.property != "grid_start_corner" && value.property != "grid_start_axis")) throw new Exception("Invalid UiPropertyModification.property");
             if (value.value == null || (value.value != null && value.value.Length > 4096)) throw new Exception("Invalid UiPropertyModification.value");
             if (value.action == null || (value.action != "modify")) throw new Exception("Invalid UiPropertyModification.action");
         }
@@ -348,6 +525,10 @@ namespace UnityMcp.Editor
                 case "delete": Validate(new UiNodeDeletion { action = value.action, index_path = value.index_path }, depth + 1); break;
                 case "move": Validate(new UiNodeMove { action = value.action, index_path = value.index_path, parent_path = value.parent_path, sibling_index = value.sibling_index, world_position_stays = value.world_position_stays }, depth + 1); break;
                 case "add_component": Validate(new UiComponentAddition { action = value.action, index_path = value.index_path, component = value.component, viewport_path = value.viewport_path, content_path = value.content_path, horizontal = value.horizontal, vertical = value.vertical }, depth + 1); break;
+                case "duplicate": Validate(new UiNodeDuplication { action = value.action, index_path = value.index_path, parent_path = value.parent_path, name = value.name, sibling_index = value.sibling_index }, depth + 1); break;
+                case "instantiate_prefab": Validate(new UiPrefabInstantiation { action = value.action, prefab_path = value.prefab_path, parent_path = value.parent_path, name = value.name, sibling_index = value.sibling_index }, depth + 1); break;
+                case "add_script": Validate(new UiScriptAddition { action = value.action, index_path = value.index_path, script_path = value.script_path }, depth + 1); break;
+                case "set_reference": Validate(new UiReferenceAssignment { action = value.action, index_path = value.index_path, component_type = value.component_type, component_index = value.component_index, field_path = value.field_path, target_path = value.target_path, target_component = value.target_component, target_component_index = value.target_component_index, clear = value.clear }, depth + 1); break;
                 default: throw new Exception("Unknown operation action");
             }
         }
@@ -439,8 +620,283 @@ namespace UnityMcp.Editor
             if (value == null) throw new Exception("Missing UiPropertyChange");
             if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
             if (value.index_path == null || (value.index_path != null && !Regex.IsMatch(value.index_path, "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"))) throw new Exception("Invalid UiPropertyChange.index_path");
-            if (value.property == null || (value.property != "name" && value.property != "active" && value.property != "text" && value.property != "font_size" && value.property != "text_color" && value.property != "font_path" && value.property != "sprite_path" && value.property != "color" && value.property != "anchored_position" && value.property != "size_delta" && value.property != "anchor" && value.property != "anchor_min" && value.property != "anchor_max" && value.property != "pivot" && value.property != "offset_min" && value.property != "offset_max" && value.property != "spacing" && value.property != "padding" && value.property != "interactable" && value.property != "image_type" && value.property != "preferred_width" && value.property != "preferred_height" && value.property != "min_width" && value.property != "min_height" && value.property != "flexible_width" && value.property != "flexible_height" && value.property != "horizontal_fit" && value.property != "vertical_fit" && value.property != "grid_cell_size" && value.property != "grid_spacing" && value.property != "scroll_horizontal" && value.property != "scroll_vertical")) throw new Exception("Invalid UiPropertyChange.property");
+            if (value.property == null || (value.property != "name" && value.property != "active" && value.property != "text" && value.property != "font_size" && value.property != "text_color" && value.property != "font_path" && value.property != "sprite_path" && value.property != "color" && value.property != "anchored_position" && value.property != "size_delta" && value.property != "anchor" && value.property != "anchor_min" && value.property != "anchor_max" && value.property != "pivot" && value.property != "offset_min" && value.property != "offset_max" && value.property != "spacing" && value.property != "padding" && value.property != "interactable" && value.property != "image_type" && value.property != "preferred_width" && value.property != "preferred_height" && value.property != "min_width" && value.property != "min_height" && value.property != "flexible_width" && value.property != "flexible_height" && value.property != "horizontal_fit" && value.property != "vertical_fit" && value.property != "grid_cell_size" && value.property != "grid_spacing" && value.property != "scroll_horizontal" && value.property != "scroll_vertical" && value.property != "text_alignment" && value.property != "word_wrap" && value.property != "auto_size" && value.property != "font_size_min" && value.property != "font_size_max" && value.property != "text_overflow" && value.property != "line_spacing" && value.property != "preserve_aspect" && value.property != "fill_method" && value.property != "fill_origin" && value.property != "fill_amount" && value.property != "fill_clockwise" && value.property != "raycast_target" && value.property != "child_alignment" && value.property != "child_control_width" && value.property != "child_control_height" && value.property != "child_force_expand_width" && value.property != "child_force_expand_height" && value.property != "child_scale_width" && value.property != "child_scale_height" && value.property != "grid_constraint" && value.property != "grid_constraint_count" && value.property != "grid_start_corner" && value.property != "grid_start_axis")) throw new Exception("Invalid UiPropertyChange.property");
             if (value.value == null || (value.value != null && value.value.Length > 4096)) throw new Exception("Invalid UiPropertyChange.value");
+        }
+
+        public static void Validate(UiNodeDuplication value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiNodeDuplication");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "duplicate")) throw new Exception("Invalid UiNodeDuplication.action");
+            if (value.index_path == null || (value.index_path != null && !Regex.IsMatch(value.index_path, "^0/(?:0|[1-9][0-9]*)(?:/(?:0|[1-9][0-9]*)){0,63}$"))) throw new Exception("Invalid UiNodeDuplication.index_path");
+            if (value.parent_path == null || (value.parent_path != null && !Regex.IsMatch(value.parent_path, "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"))) throw new Exception("Invalid UiNodeDuplication.parent_path");
+            if ((value.name != null && value.name.Length > 80) || (value.name != null && !Regex.IsMatch(value.name, "^[^/\\\\\\x00-\\x1f]*$"))) throw new Exception("Invalid UiNodeDuplication.name");
+            if (value.sibling_index < -1 || value.sibling_index > 2000) throw new Exception("Invalid UiNodeDuplication.sibling_index");
+        }
+
+        public static void Validate(UiPrefabInstantiation value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiPrefabInstantiation");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "instantiate_prefab")) throw new Exception("Invalid UiPrefabInstantiation.action");
+            if (value.prefab_path == null || (value.prefab_path != null && !Regex.IsMatch(value.prefab_path, "^Assets/.+\\.prefab$"))) throw new Exception("Invalid UiPrefabInstantiation.prefab_path");
+            if (value.parent_path == null || (value.parent_path != null && !Regex.IsMatch(value.parent_path, "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"))) throw new Exception("Invalid UiPrefabInstantiation.parent_path");
+            if ((value.name != null && value.name.Length > 80) || (value.name != null && !Regex.IsMatch(value.name, "^[^/\\\\\\x00-\\x1f]*$"))) throw new Exception("Invalid UiPrefabInstantiation.name");
+            if (value.sibling_index < -1 || value.sibling_index > 2000) throw new Exception("Invalid UiPrefabInstantiation.sibling_index");
+        }
+
+        public static void Validate(UiScriptAddition value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiScriptAddition");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "add_script")) throw new Exception("Invalid UiScriptAddition.action");
+            if (value.index_path == null || (value.index_path != null && !Regex.IsMatch(value.index_path, "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"))) throw new Exception("Invalid UiScriptAddition.index_path");
+            if (value.script_path == null || (value.script_path != null && !Regex.IsMatch(value.script_path, "^Assets/.+\\.cs$"))) throw new Exception("Invalid UiScriptAddition.script_path");
+        }
+
+        public static void Validate(UiReferenceAssignment value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiReferenceAssignment");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "set_reference")) throw new Exception("Invalid UiReferenceAssignment.action");
+            if (value.index_path == null || (value.index_path != null && !Regex.IsMatch(value.index_path, "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"))) throw new Exception("Invalid UiReferenceAssignment.index_path");
+            if (value.component_type == null || (value.component_type != null && value.component_type.Length < 1) || (value.component_type != null && value.component_type.Length > 512)) throw new Exception("Invalid UiReferenceAssignment.component_type");
+            if (value.component_index < -1 || value.component_index > 2000) throw new Exception("Invalid UiReferenceAssignment.component_index");
+            if (value.field_path == null || (value.field_path != null && !Regex.IsMatch(value.field_path, "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*$"))) throw new Exception("Invalid UiReferenceAssignment.field_path");
+            if ((value.target_component != null && value.target_component.Length > 512)) throw new Exception("Invalid UiReferenceAssignment.target_component");
+            if (value.target_component_index < -1 || value.target_component_index > 2000) throw new Exception("Invalid UiReferenceAssignment.target_component_index");
+        }
+
+        public static void Validate(RefreshAssetsRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing RefreshAssetsRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid RefreshAssetsRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid RefreshAssetsRequest.deadline");
+        }
+
+        public static void Validate(EnterPlayModeRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing EnterPlayModeRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid EnterPlayModeRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid EnterPlayModeRequest.deadline");
+            if ((value.mode != "isolated" && value.mode != "current")) throw new Exception("Invalid EnterPlayModeRequest.mode");
+            if (float.IsNaN(value.reference_width) || float.IsInfinity(value.reference_width) || value.reference_width > 16384 || value.reference_width <= 0) throw new Exception("Invalid EnterPlayModeRequest.reference_width");
+            if (float.IsNaN(value.reference_height) || float.IsInfinity(value.reference_height) || value.reference_height > 16384 || value.reference_height <= 0) throw new Exception("Invalid EnterPlayModeRequest.reference_height");
+        }
+
+        public static void Validate(ExitPlayModeRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing ExitPlayModeRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid ExitPlayModeRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid ExitPlayModeRequest.deadline");
+        }
+
+        public static void Validate(InspectRuntimeUiRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing InspectRuntimeUiRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid InspectRuntimeUiRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid InspectRuntimeUiRequest.deadline");
+            if ((value.test_instance_id != null && value.test_instance_id.Length > 512)) throw new Exception("Invalid InspectRuntimeUiRequest.test_instance_id");
+            if ((value.scene_name != null && value.scene_name.Length > 512)) throw new Exception("Invalid InspectRuntimeUiRequest.scene_name");
+            if ((value.path != null && value.path.Length > 512)) throw new Exception("Invalid InspectRuntimeUiRequest.path");
+            if (value.max_nodes < 1 || value.max_nodes > 500) throw new Exception("Invalid InspectRuntimeUiRequest.max_nodes");
+        }
+
+        public static void Validate(MountTestPrefabRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing MountTestPrefabRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid MountTestPrefabRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid MountTestPrefabRequest.deadline");
+            if (value.prefab_path == null || (value.prefab_path != null && !Regex.IsMatch(value.prefab_path, "^Assets/.+\\.prefab$"))) throw new Exception("Invalid MountTestPrefabRequest.prefab_path");
+            if ((value.parent_path != null && value.parent_path.Length > 512)) throw new Exception("Invalid MountTestPrefabRequest.parent_path");
+            if ((value.scene_name != null && value.scene_name.Length > 512)) throw new Exception("Invalid MountTestPrefabRequest.scene_name");
+        }
+
+        public static void Validate(ClearTestInstancesRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing ClearTestInstancesRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid ClearTestInstancesRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid ClearTestInstancesRequest.deadline");
+            if ((value.test_instance_id != null && value.test_instance_id.Length > 512)) throw new Exception("Invalid ClearTestInstancesRequest.test_instance_id");
+        }
+
+        public static void Validate(InvokeButtonStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing InvokeButtonStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "invoke_button")) throw new Exception("Invalid InvokeButtonStep.action");
+            if ((value.path != null && value.path.Length > 512)) throw new Exception("Invalid InvokeButtonStep.path");
+        }
+
+        public static void Validate(SetInputTextStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing SetInputTextStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "set_input_text")) throw new Exception("Invalid SetInputTextStep.action");
+            if ((value.path != null && value.path.Length > 512)) throw new Exception("Invalid SetInputTextStep.path");
+            if (value.text == null || (value.text != null && value.text.Length > 4096)) throw new Exception("Invalid SetInputTextStep.text");
+        }
+
+        public static void Validate(AssertUiStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing AssertUiStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "assert")) throw new Exception("Invalid AssertUiStep.action");
+            if ((value.path != null && value.path.Length > 512)) throw new Exception("Invalid AssertUiStep.path");
+            if (value.property == null || (value.property != "active_self" && value.property != "active_in_hierarchy" && value.property != "text" && value.property != "interactable" && value.property != "reference_is_set" && value.property != "reference_path")) throw new Exception("Invalid AssertUiStep.property");
+            if (value.expected == null || (value.expected != null && value.expected.Length > 4096)) throw new Exception("Invalid AssertUiStep.expected");
+            if ((value.component_type != null && value.component_type.Length > 512)) throw new Exception("Invalid AssertUiStep.component_type");
+            if ((value.field_path != null && value.field_path.Length > 512)) throw new Exception("Invalid AssertUiStep.field_path");
+        }
+
+        public static void Validate(WaitUiConditionStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing WaitUiConditionStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "wait_condition")) throw new Exception("Invalid WaitUiConditionStep.action");
+            if ((value.path != null && value.path.Length > 512)) throw new Exception("Invalid WaitUiConditionStep.path");
+            if (value.property == null || (value.property != "active_self" && value.property != "active_in_hierarchy" && value.property != "text" && value.property != "interactable" && value.property != "reference_is_set" && value.property != "reference_path")) throw new Exception("Invalid WaitUiConditionStep.property");
+            if (value.expected == null || (value.expected != null && value.expected.Length > 4096)) throw new Exception("Invalid WaitUiConditionStep.expected");
+            if ((value.component_type != null && value.component_type.Length > 512)) throw new Exception("Invalid WaitUiConditionStep.component_type");
+            if ((value.field_path != null && value.field_path.Length > 512)) throw new Exception("Invalid WaitUiConditionStep.field_path");
+            if (float.IsNaN(value.timeout_seconds) || float.IsInfinity(value.timeout_seconds) || value.timeout_seconds < 0 || value.timeout_seconds > 10) throw new Exception("Invalid WaitUiConditionStep.timeout_seconds");
+        }
+
+        public static void Validate(ScreenshotUiStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing ScreenshotUiStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "screenshot")) throw new Exception("Invalid ScreenshotUiStep.action");
+            if (value.width < 0 || value.width > 2048) throw new Exception("Invalid ScreenshotUiStep.width");
+            if (value.height < 0 || value.height > 2048) throw new Exception("Invalid ScreenshotUiStep.height");
+        }
+
+        public static void Validate(UiTestStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiTestStep");
+            switch (value.action)
+            {
+                case "invoke_button": Validate(new InvokeButtonStep { action = value.action, path = value.path }, depth + 1); break;
+                case "set_input_text": Validate(new SetInputTextStep { action = value.action, path = value.path, text = value.text, notify = value.notify }, depth + 1); break;
+                case "assert": Validate(new AssertUiStep { action = value.action, path = value.path, property = value.property, expected = value.expected, component_type = value.component_type, field_path = value.field_path }, depth + 1); break;
+                case "wait_condition": Validate(new WaitUiConditionStep { action = value.action, path = value.path, property = value.property, expected = value.expected, component_type = value.component_type, field_path = value.field_path, timeout_seconds = value.timeout_seconds }, depth + 1); break;
+                case "screenshot": Validate(new ScreenshotUiStep { action = value.action, width = value.width, height = value.height }, depth + 1); break;
+                default: throw new Exception("Unknown operation action");
+            }
+        }
+
+        public static void Validate(RunUiTestRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing RunUiTestRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid RunUiTestRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid RunUiTestRequest.deadline");
+            if (value.test_instance_id == null || (value.test_instance_id != null && value.test_instance_id.Length > 512)) throw new Exception("Invalid RunUiTestRequest.test_instance_id");
+            if (value.steps == null || (value.steps != null && value.steps.Length < 1) || (value.steps != null && value.steps.Length > 32)) throw new Exception("Invalid RunUiTestRequest.steps");
+            if (value.steps != null)
+                foreach (var item in value.steps) Validate(item, depth + 1);
+        }
+
+        public static void Validate(CreateTmpFontRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing CreateTmpFontRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid CreateTmpFontRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid CreateTmpFontRequest.deadline");
+            if (value.source_font_path == null || (value.source_font_path != null && value.source_font_path.Length < 1)) throw new Exception("Invalid CreateTmpFontRequest.source_font_path");
+            if (value.asset_path == null || (value.asset_path != null && value.asset_path.Length < 1)) throw new Exception("Invalid CreateTmpFontRequest.asset_path");
+            if ((value.characters != null && value.characters.Length > 4096)) throw new Exception("Invalid CreateTmpFontRequest.characters");
+            if ((value.population_mode != "static" && value.population_mode != "dynamic")) throw new Exception("Invalid CreateTmpFontRequest.population_mode");
+            if (value.sampling_point_size < 16 || value.sampling_point_size > 128) throw new Exception("Invalid CreateTmpFontRequest.sampling_point_size");
+            if ((value.atlas_size != 512 && value.atlas_size != 1024 && value.atlas_size != 2048)) throw new Exception("Invalid CreateTmpFontRequest.atlas_size");
+            if (value.padding < 1 || value.padding > 16) throw new Exception("Invalid CreateTmpFontRequest.padding");
+        }
+
+        public static void Validate(UpdateTmpFontCharactersRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UpdateTmpFontCharactersRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid UpdateTmpFontCharactersRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid UpdateTmpFontCharactersRequest.deadline");
+            if (value.asset_path == null || (value.asset_path != null && value.asset_path.Length < 1)) throw new Exception("Invalid UpdateTmpFontCharactersRequest.asset_path");
+            if (value.characters == null || (value.characters != null && value.characters.Length < 1) || (value.characters != null && value.characters.Length > 4096)) throw new Exception("Invalid UpdateTmpFontCharactersRequest.characters");
+            if ((value.mode != "append" && value.mode != "replace")) throw new Exception("Invalid UpdateTmpFontCharactersRequest.mode");
+        }
+
+        public static void Validate(CreateUiPrefabRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing CreateUiPrefabRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid CreateUiPrefabRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid CreateUiPrefabRequest.deadline");
+            if (value.output_path == null) throw new Exception("Invalid CreateUiPrefabRequest.output_path");
+            Validate(value.spec, depth + 1);
+        }
+
+        public static void Validate(UiOffset value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiOffset");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (float.IsNaN(value.x) || float.IsInfinity(value.x) || value.x < -16384 || value.x > 16384) throw new Exception("Invalid UiOffset.x");
+            if (float.IsNaN(value.y) || float.IsInfinity(value.y) || value.y < -16384 || value.y > 16384) throw new Exception("Invalid UiOffset.y");
+        }
+
+        public static void Validate(UiPrefabNode value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiPrefabNode");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.name == null || (value.name != null && value.name.Length < 1) || (value.name != null && value.name.Length > 80) || (value.name != null && !Regex.IsMatch(value.name, "^[^/\\\\\\x00-\\x1f]+$"))) throw new Exception("Invalid UiPrefabNode.name");
+            if ((value.kind != "panel" && value.kind != "image" && value.kind != "text" && value.kind != "button" && value.kind != "prefab")) throw new Exception("Invalid UiPrefabNode.kind");
+            if (float.IsNaN(value.width) || float.IsInfinity(value.width) || value.width > 16384 || value.width <= 0) throw new Exception("Invalid UiPrefabNode.width");
+            if (float.IsNaN(value.height) || float.IsInfinity(value.height) || value.height > 16384 || value.height <= 0) throw new Exception("Invalid UiPrefabNode.height");
+            if (float.IsNaN(value.x) || float.IsInfinity(value.x) || value.x < -16384 || value.x > 16384) throw new Exception("Invalid UiPrefabNode.x");
+            if (float.IsNaN(value.y) || float.IsInfinity(value.y) || value.y < -16384 || value.y > 16384) throw new Exception("Invalid UiPrefabNode.y");
+            if ((value.anchor != "top_left" && value.anchor != "top_center" && value.anchor != "top_right" && value.anchor != "center_left" && value.anchor != "center" && value.anchor != "center_right" && value.anchor != "bottom_left" && value.anchor != "bottom_center" && value.anchor != "bottom_right" && value.anchor != "stretch_horizontal_top" && value.anchor != "stretch_horizontal_center" && value.anchor != "stretch_horizontal_bottom" && value.anchor != "stretch_vertical_left" && value.anchor != "stretch_vertical_center" && value.anchor != "stretch_vertical_right" && value.anchor != "stretch")) throw new Exception("Invalid UiPrefabNode.anchor");
+            if (value.has_offset_min) Validate(value.offset_min, depth + 1);
+            if (value.has_offset_max) Validate(value.offset_max, depth + 1);
+            if ((value.color != null && !Regex.IsMatch(value.color, "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"))) throw new Exception("Invalid UiPrefabNode.color");
+            if ((value.text != null && value.text.Length > 4096)) throw new Exception("Invalid UiPrefabNode.text");
+            if ((value.text_color != null && !Regex.IsMatch(value.text_color, "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"))) throw new Exception("Invalid UiPrefabNode.text_color");
+            if (float.IsNaN(value.font_size) || float.IsInfinity(value.font_size) || value.font_size > 512 || value.font_size <= 0) throw new Exception("Invalid UiPrefabNode.font_size");
+            if ((value.layout != "none" && value.layout != "vertical" && value.layout != "horizontal" && value.layout != "grid")) throw new Exception("Invalid UiPrefabNode.layout");
+            if (float.IsNaN(value.spacing) || float.IsInfinity(value.spacing) || value.spacing < 0 || value.spacing > 4096) throw new Exception("Invalid UiPrefabNode.spacing");
+            if (value.padding < 0 || value.padding > 4096) throw new Exception("Invalid UiPrefabNode.padding");
+            if ((value.children != null && value.children.Length > 128)) throw new Exception("Invalid UiPrefabNode.children");
+            if (value.children != null)
+                foreach (var item in value.children) Validate(item, depth + 1);
+            if ((value.text_alignment != "TopLeft" && value.text_alignment != "Top" && value.text_alignment != "TopRight" && value.text_alignment != "Left" && value.text_alignment != "Center" && value.text_alignment != "Right" && value.text_alignment != "BottomLeft" && value.text_alignment != "Bottom" && value.text_alignment != "BottomRight" && value.text_alignment != "Justified" && value.text_alignment != "Flush")) throw new Exception("Invalid UiPrefabNode.text_alignment");
+            if (float.IsNaN(value.font_size_min) || float.IsInfinity(value.font_size_min) || value.font_size_min < 1 || value.font_size_min > 512) throw new Exception("Invalid UiPrefabNode.font_size_min");
+            if (float.IsNaN(value.font_size_max) || float.IsInfinity(value.font_size_max) || value.font_size_max < 1 || value.font_size_max > 512) throw new Exception("Invalid UiPrefabNode.font_size_max");
+            if ((value.text_overflow != "Overflow" && value.text_overflow != "Ellipsis" && value.text_overflow != "Masking" && value.text_overflow != "Truncate" && value.text_overflow != "Page")) throw new Exception("Invalid UiPrefabNode.text_overflow");
+            if (float.IsNaN(value.line_spacing) || float.IsInfinity(value.line_spacing) || value.line_spacing < -512 || value.line_spacing > 512) throw new Exception("Invalid UiPrefabNode.line_spacing");
+            if ((value.image_type != "Simple" && value.image_type != "Sliced" && value.image_type != "Tiled" && value.image_type != "Filled")) throw new Exception("Invalid UiPrefabNode.image_type");
+            if ((value.fill_method != "Horizontal" && value.fill_method != "Vertical" && value.fill_method != "Radial90" && value.fill_method != "Radial180" && value.fill_method != "Radial360")) throw new Exception("Invalid UiPrefabNode.fill_method");
+            if (value.fill_origin < 0 || value.fill_origin > 3) throw new Exception("Invalid UiPrefabNode.fill_origin");
+            if (float.IsNaN(value.fill_amount) || float.IsInfinity(value.fill_amount) || value.fill_amount < 0 || value.fill_amount > 1) throw new Exception("Invalid UiPrefabNode.fill_amount");
+            if ((value.child_alignment != "UpperLeft" && value.child_alignment != "UpperCenter" && value.child_alignment != "UpperRight" && value.child_alignment != "MiddleLeft" && value.child_alignment != "MiddleCenter" && value.child_alignment != "MiddleRight" && value.child_alignment != "LowerLeft" && value.child_alignment != "LowerCenter" && value.child_alignment != "LowerRight")) throw new Exception("Invalid UiPrefabNode.child_alignment");
+            if ((value.grid_constraint != "Flexible" && value.grid_constraint != "FixedColumnCount" && value.grid_constraint != "FixedRowCount")) throw new Exception("Invalid UiPrefabNode.grid_constraint");
+            if (value.grid_constraint_count < 1 || value.grid_constraint_count > 2000) throw new Exception("Invalid UiPrefabNode.grid_constraint_count");
+            if ((value.grid_start_corner != "UpperLeft" && value.grid_start_corner != "UpperRight" && value.grid_start_corner != "LowerLeft" && value.grid_start_corner != "LowerRight")) throw new Exception("Invalid UiPrefabNode.grid_start_corner");
+            if ((value.grid_start_axis != "Horizontal" && value.grid_start_axis != "Vertical")) throw new Exception("Invalid UiPrefabNode.grid_start_axis");
+            Validate(value.grid_cell_size, depth + 1);
+            Validate(value.grid_spacing, depth + 1);
+        }
+
+        public static void Validate(UiPrefabSpec value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing UiPrefabSpec");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.name == null || (value.name != null && value.name.Length < 1) || (value.name != null && value.name.Length > 80) || (value.name != null && !Regex.IsMatch(value.name, "^[^/\\\\\\x00-\\x1f]+$"))) throw new Exception("Invalid UiPrefabSpec.name");
+            if (value.children == null || (value.children != null && value.children.Length < 1) || (value.children != null && value.children.Length > 128)) throw new Exception("Invalid UiPrefabSpec.children");
+            if (value.children != null)
+                foreach (var item in value.children) Validate(item, depth + 1);
         }
 
     }

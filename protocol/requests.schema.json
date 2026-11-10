@@ -97,7 +97,7 @@
           "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,63}$"
         },
         "node": {
-          "$ref": "create_ui_prefab.schema.json#/$defs/UiPrefabNode"
+          "$ref": "ui.schema.json#/$defs/UiPrefabNode"
         },
         "sibling_index": {
           "type": "integer",
@@ -209,7 +209,31 @@
             "grid_cell_size",
             "grid_spacing",
             "scroll_horizontal",
-            "scroll_vertical"
+            "scroll_vertical",
+            "text_alignment",
+            "word_wrap",
+            "auto_size",
+            "font_size_min",
+            "font_size_max",
+            "text_overflow",
+            "line_spacing",
+            "preserve_aspect",
+            "fill_method",
+            "fill_origin",
+            "fill_amount",
+            "fill_clockwise",
+            "raycast_target",
+            "child_alignment",
+            "child_control_width",
+            "child_control_height",
+            "child_force_expand_width",
+            "child_force_expand_height",
+            "child_scale_width",
+            "child_scale_height",
+            "grid_constraint",
+            "grid_constraint_count",
+            "grid_start_corner",
+            "grid_start_axis"
           ]
         },
         "value": {
@@ -298,6 +322,18 @@
         },
         {
           "$ref": "#/$defs/UiComponentAddition"
+        },
+        {
+          "$ref": "#/$defs/UiNodeDuplication"
+        },
+        {
+          "$ref": "#/$defs/UiPrefabInstantiation"
+        },
+        {
+          "$ref": "#/$defs/UiScriptAddition"
+        },
+        {
+          "$ref": "#/$defs/UiReferenceAssignment"
         }
       ],
       "x-discriminator": "action"
@@ -327,8 +363,7 @@
         "deadline",
         "queries"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/assets/find"
+      "x-request": true
     },
     "InspectUiAssetsRequest": {
       "type": "object",
@@ -355,8 +390,7 @@
         "deadline",
         "assets"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/assets/inspect"
+      "x-request": true
     },
     "BatchEditUiPrefabRequest": {
       "type": "object",
@@ -392,8 +426,7 @@
         "expected_version",
         "operations"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/prefabs/batch"
+      "x-request": true
     },
     "PreviewUiPrefabRequest": {
       "type": "object",
@@ -431,8 +464,7 @@
         "deadline",
         "asset_path"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/prefabs/preview"
+      "x-request": true
     },
     "ImportUiImageRequest": {
       "type": "object",
@@ -489,8 +521,7 @@
         "asset_path",
         "image_base64"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/images/import"
+      "x-request": true
     },
     "ListUiBackupsRequest": {
       "type": "object",
@@ -523,8 +554,7 @@
         "deadline",
         "asset_path"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/backups/list"
+      "x-request": true
     },
     "RestoreUiPrefabRequest": {
       "type": "object",
@@ -552,8 +582,7 @@
         "backup_id",
         "expected_version"
       ],
-      "x-request": true,
-      "x-endpoint": "/ui/backups/restore"
+      "x-request": true
     },
     "UiPropertyChange": {
       "type": "object",
@@ -597,7 +626,31 @@
             "grid_cell_size",
             "grid_spacing",
             "scroll_horizontal",
-            "scroll_vertical"
+            "scroll_vertical",
+            "text_alignment",
+            "word_wrap",
+            "auto_size",
+            "font_size_min",
+            "font_size_max",
+            "text_overflow",
+            "line_spacing",
+            "preserve_aspect",
+            "fill_method",
+            "fill_origin",
+            "fill_amount",
+            "fill_clockwise",
+            "raycast_target",
+            "child_alignment",
+            "child_control_width",
+            "child_control_height",
+            "child_force_expand_width",
+            "child_force_expand_height",
+            "child_scale_width",
+            "child_scale_height",
+            "grid_constraint",
+            "grid_constraint_count",
+            "grid_start_corner",
+            "grid_start_axis"
           ]
         },
         "value": {
@@ -609,6 +662,685 @@
         "index_path",
         "property",
         "value"
+      ]
+    },
+    "UiNodeDuplication": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "duplicate"
+          ]
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0/(?:0|[1-9][0-9]*)(?:/(?:0|[1-9][0-9]*)){0,63}$"
+        },
+        "parent_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "name": {
+          "type": "string",
+          "default": "",
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\x00-\\x1f]*$"
+        },
+        "sibling_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "action",
+        "index_path",
+        "parent_path"
+      ]
+    },
+    "UiPrefabInstantiation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "instantiate_prefab"
+          ]
+        },
+        "prefab_path": {
+          "type": "string",
+          "pattern": "^Assets/.+\\.prefab$"
+        },
+        "parent_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "name": {
+          "type": "string",
+          "default": "",
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\x00-\\x1f]*$"
+        },
+        "sibling_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1,
+          "maximum": 2000
+        }
+      },
+      "required": [
+        "action",
+        "prefab_path",
+        "parent_path"
+      ]
+    },
+    "UiScriptAddition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "add_script"
+          ]
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "script_path": {
+          "type": "string",
+          "pattern": "^Assets/.+\\.cs$"
+        }
+      },
+      "required": [
+        "action",
+        "index_path",
+        "script_path"
+      ]
+    },
+    "UiReferenceAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "set_reference"
+          ]
+        },
+        "index_path": {
+          "type": "string",
+          "pattern": "^0(?:/(?:0|[1-9][0-9]*)){0,64}$"
+        },
+        "component_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "component_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1,
+          "maximum": 2000
+        },
+        "field_path": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+        },
+        "target_path": {
+          "type": "string",
+          "default": ""
+        },
+        "target_component": {
+          "type": "string",
+          "default": "",
+          "maxLength": 512
+        },
+        "target_component_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1,
+          "maximum": 2000
+        },
+        "clear": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "action",
+        "index_path",
+        "component_type",
+        "field_path"
+      ]
+    },
+    "RefreshAssetsRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "deadline"
+      ],
+      "x-request": true
+    },
+    "EnterPlayModeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "isolated",
+            "current"
+          ],
+          "default": "isolated"
+        },
+        "reference_width": {
+          "type": "number",
+          "default": 1920,
+          "exclusiveMinimum": 0,
+          "maximum": 16384
+        },
+        "reference_height": {
+          "type": "number",
+          "default": 1080,
+          "exclusiveMinimum": 0,
+          "maximum": 16384
+        }
+      },
+      "required": [
+        "id",
+        "deadline"
+      ],
+      "x-request": true
+    },
+    "ExitPlayModeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "deadline"
+      ],
+      "x-request": true
+    },
+    "InspectRuntimeUiRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "test_instance_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "scene_name": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "max_nodes": {
+          "type": "integer",
+          "default": 200,
+          "minimum": 1,
+          "maximum": 500
+        }
+      },
+      "required": [
+        "id",
+        "deadline"
+      ],
+      "x-request": true
+    },
+    "MountTestPrefabRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "prefab_path": {
+          "type": "string",
+          "pattern": "^Assets/.+\\.prefab$"
+        },
+        "parent_path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "scene_name": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "prefab_path"
+      ],
+      "x-request": true
+    },
+    "ClearTestInstancesRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "test_instance_id": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        }
+      },
+      "required": [
+        "id",
+        "deadline"
+      ],
+      "x-request": true
+    },
+    "InvokeButtonStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "invoke_button"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": "0"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "SetInputTextStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "set_input_text"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": "0"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "notify": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "action",
+        "text"
+      ]
+    },
+    "AssertUiStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "assert"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": "0"
+        },
+        "property": {
+          "type": "string",
+          "enum": [
+            "active_self",
+            "active_in_hierarchy",
+            "text",
+            "interactable",
+            "reference_is_set",
+            "reference_path"
+          ]
+        },
+        "expected": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "component_type": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "field_path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        }
+      },
+      "required": [
+        "action",
+        "property",
+        "expected"
+      ]
+    },
+    "WaitUiConditionStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "wait_condition"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": "0"
+        },
+        "property": {
+          "type": "string",
+          "enum": [
+            "active_self",
+            "active_in_hierarchy",
+            "text",
+            "interactable",
+            "reference_is_set",
+            "reference_path"
+          ]
+        },
+        "expected": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "component_type": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "field_path": {
+          "type": "string",
+          "maxLength": 512,
+          "default": ""
+        },
+        "timeout_seconds": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 10
+        }
+      },
+      "required": [
+        "action",
+        "property",
+        "expected"
+      ]
+    },
+    "ScreenshotUiStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "screenshot"
+          ]
+        },
+        "width": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 2048,
+          "description": "Set width and height together (1..2048); both 0 preserves the current Game view size."
+        },
+        "height": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 2048,
+          "description": "Set width and height together (1..2048); both 0 preserves the current Game view size."
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "UiTestStep": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/InvokeButtonStep"
+        },
+        {
+          "$ref": "#/$defs/SetInputTextStep"
+        },
+        {
+          "$ref": "#/$defs/AssertUiStep"
+        },
+        {
+          "$ref": "#/$defs/WaitUiConditionStep"
+        },
+        {
+          "$ref": "#/$defs/ScreenshotUiStep"
+        }
+      ],
+      "x-discriminator": "action"
+    },
+    "RunUiTestRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "test_instance_id": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiTestStep"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "test_instance_id",
+        "steps"
+      ],
+      "x-request": true
+    },
+    "CreateTmpFontRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "source_font_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "characters": {
+          "type": "string",
+          "default": "",
+          "maxLength": 4096
+        },
+        "population_mode": {
+          "type": "string",
+          "enum": [
+            "static",
+            "dynamic"
+          ],
+          "default": "dynamic"
+        },
+        "sampling_point_size": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 128,
+          "default": 48
+        },
+        "atlas_size": {
+          "type": "integer",
+          "enum": [
+            512,
+            1024,
+            2048
+          ],
+          "default": 1024
+        },
+        "padding": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16,
+          "default": 5
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "source_font_path",
+        "asset_path"
+      ],
+      "x-request": true
+    },
+    "UpdateTmpFontCharactersRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "asset_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "characters": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "append",
+            "replace"
+          ],
+          "default": "append"
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "asset_path",
+        "characters"
+      ],
+      "x-request": true
+    },
+    "CreateUiPrefabRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-request": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "output_path": {
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "ui.schema.json#/$defs/UiPrefabSpec"
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "output_path",
+        "spec"
       ]
     }
   }

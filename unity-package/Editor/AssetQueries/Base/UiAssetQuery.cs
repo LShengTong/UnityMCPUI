@@ -32,7 +32,7 @@ namespace UnityMcp.Editor
             if (!AssetDatabase.IsValidFolder(query.folder)) throw new Exception("Search folder does not exist");
             var paths = AssetDatabase.FindAssets(Filter, new[] { query.folder }).Select(AssetDatabase.GUIDToAssetPath)
                 .Distinct().OrderBy(p => p, StringComparer.Ordinal);
-            var matches = new List<UiAssetQueryUtility.AssetReference>();
+            var matches = new List<AssetReference>();
             foreach (string path in paths)
             {
                 UiAssetQueryUtility.CheckDeadline(deadline);
@@ -51,18 +51,4 @@ namespace UnityMcp.Editor
         }
     }
 
-    [Serializable] internal class UiAssetInspectionResult
-    {
-        public int index;
-        public bool ok;
-        public string error, asset_type;
-        public UiAssetQueryUtility.AssetReference asset;
-    }
-    [Serializable] internal sealed class UiAssetSearchResult
-    {
-        public int index, total, next_offset = -1;
-        public bool ok;
-        public string error, asset_type;
-        public UiAssetQueryUtility.AssetReference[] assets;
-    }
 }

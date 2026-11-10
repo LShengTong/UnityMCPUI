@@ -7,6 +7,8 @@ namespace UnityMcp.Editor
     {
         public static void Execute(Transform root, Transform node, Transform viewport, Transform content, UiBatchOperation operation)
         {
+            if (operation.component != "ScrollRect" && (!string.IsNullOrEmpty(operation.viewport_path) || !string.IsNullOrEmpty(operation.content_path)))
+                throw new Exception("viewport_path/content_path are only for ScrollRect");
             UiNodeUtility.EnsureEditable(node, root);
             if (!(node is RectTransform)) throw new Exception("UI components require RectTransform");
             Type type;

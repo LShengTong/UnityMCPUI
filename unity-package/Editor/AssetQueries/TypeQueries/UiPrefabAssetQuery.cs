@@ -17,64 +17,32 @@ namespace UnityMcp.Editor
             if (!query.asset_path.EndsWith(".prefab", StringComparison.Ordinal)) throw new Exception("Expected .prefab asset");
             if (query.max_nodes < 1 || query.max_nodes > 1000) throw new Exception("max_nodes must be 1..1000");
         }
-        [Serializable] internal sealed class Details
-        {
-            public string asset_path, version;
-            public bool truncated;
-            public int total;
-            public Node[] nodes;
-        }
-        [Serializable] sealed class Result : UiAssetInspectionResult { public Details prefab; }
-        [Serializable] internal sealed class Node
-        {
-            public string name, index_path, parent_index_path;
-            public bool active_self;
-            public string[] components;
-            public RectInfo rect;
-            public ComponentInfo[] ui;
-        }
-        [Serializable] internal sealed class RectInfo
-        {
-            public Vector2 anchor_min, anchor_max, pivot, size_delta, offset_min, offset_max;
-            public Vector3 anchored_position, local_scale, local_euler_angles;
-        }
-        [Serializable] internal sealed class ComponentInfo
-        {
-            public string type;
-            public bool enabled, properties_truncated;
-            public Property[] properties;
-        }
-        [Serializable] internal sealed class Property
-        {
-            public string name, value, asset_path, object_type;
-        }
-
         public override UiAssetInspectionResult Inspect(UiAssetInspection query, int index, double deadline)
         {
             UiAssetQueryUtility.CheckDeadline(deadline);
             var root = (GameObject)Resolve(query);
-            var details = new Details { asset_path = query.asset_path, version = UiPrefabVersion.Read(query.asset_path) };
-            var nodes = new List<Node>();
+            var details = new PrefabDetails { asset_path = query.asset_path, version = UiPrefabVersion.Read(query.asset_path) };
+            var nodes = new List<PrefabNodeInfo>();
             ReadNode(root.transform, "0", "", 0, query, nodes, details, deadline);
             details.nodes = nodes.ToArray();
             details.total = nodes.Count;
-            return new Result { index = index, ok = true, asset_type = "ui_prefab",
+            return new PrefabInspectionReply { index = index, ok = true, asset_type = "ui_prefab",
                 asset = UiAssetQueryUtility.Describe(root, Type), prefab = details };
         }
         static void ReadNode(Transform transform, string indexPath, string parentPath, int depth,
-            UiAssetInspection request, List<Node> nodes, Details reply, double deadline)
+            UiAssetInspection request, List<PrefabNodeInfo> nodes, PrefabDetails reply, double deadline)
         {
             UiAssetQueryUtility.CheckDeadline(deadline);
             if (nodes.Count >= request.max_nodes || depth > 64) { reply.truncated = true; return; }
             var components = transform.GetComponents<Component>();
-            var node = new Node {
+            var node = new PrefabNodeInfo {
                 name = transform.name, index_path = indexPath, parent_index_path = parentPath,
                 active_self = transform.gameObject.activeSelf,
                 components = components.Select(c => c == null ? "MissingScript" : c.GetType().FullName).ToArray(),
                 ui = components.Where(IsUiComponent).Select(ReadComponent).ToArray()
             };
             if (transform is RectTransform rect)
-                node.rect = new RectInfo {
+                node.rect = new PrefabRectInfo {
                     anchor_min = rect.anchorMin, anchor_max = rect.anchorMax, pivot = rect.pivot,
                     size_delta = rect.sizeDelta, offset_min = rect.offsetMin, offset_max = rect.offsetMax,
                     anchored_position = rect.anchoredPosition3D, local_scale = rect.localScale,
@@ -93,11 +61,11 @@ namespace UnityMcp.Editor
             return component is UnityEngine.EventSystems.UIBehaviour || component is Canvas || component is CanvasGroup;
         }
 
-        static ComponentInfo ReadComponent(Component component)
+        internal static PrefabComponentInfo ReadComponent(Component component)
         {
             // Serialized properties capture built-in UI configuration, including persistent events.
             // Keep values typed by object_type and asset_path where Unity references are involved.
-            var values = new List<Property>();
+            var values = new List<PrefabProperty>();
             bool truncated = false;
             using (var serialized = new SerializedObject(component))
             {
@@ -127,16 +95,16 @@ namespace UnityMcp.Editor
                         case SerializedPropertyType.Vector4: value = JsonUtility.ToJson(property.vector4Value); break;
                         case SerializedPropertyType.ObjectReference:
                             var target = property.objectReferenceValue;
-                            values.Add(new Property { name = property.propertyPath, value = target == null ? "" : target.name,
+                            values.Add(new PrefabProperty { name = property.propertyPath, value = target == null ? "" : target.name,
                                 asset_path = target == null ? "" : AssetDatabase.GetAssetPath(target),
                                 object_type = target == null ? "" : target.GetType().FullName });
                             continue;
                         default: continue;
                     }
-                    values.Add(new Property { name = property.propertyPath, value = value });
+                    values.Add(new PrefabProperty { name = property.propertyPath, value = value });
                 }
             }
-            return new ComponentInfo { type = component.GetType().FullName,
+            return new PrefabComponentInfo { type = component.GetType().FullName,
                 enabled = !(component is Behaviour behaviour) || behaviour.enabled,
                 properties_truncated = truncated, properties = values.ToArray() };
         }

@@ -20,14 +20,7 @@ namespace UnityMcp.Editor
 
         static void Validate(ListUiBackupsRequest request) => RequestProtocolValidation.Validate(request);
 
-        [Serializable] sealed class Reply
-        {
-            public string id, instance_id, error;
-            public bool ok;
-            public int total, next_offset = -1;
-            public UiPrefabBackupStore.Entry[] backups;
-        }
-        static string Error(string id, string message) => JsonUtility.ToJson(new Reply {
+        static string Error(string id, string message) => JsonUtility.ToJson(new ListUiBackupsReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message
         });
         static string Execute(ListUiBackupsRequest request)
@@ -40,7 +33,7 @@ namespace UnityMcp.Editor
                 var entries = UiPrefabBackupStore.List(request.asset_path);
                 var page = entries.Skip(request.offset).Take(request.limit).ToArray();
                 int next = request.offset + page.Length;
-                return JsonUtility.ToJson(new Reply { id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                return JsonUtility.ToJson(new ListUiBackupsReply { id = request.id, instance_id = EditorInstanceInfo.InstanceId,
                     ok = true, total = entries.Length, next_offset = next < entries.Length ? next : -1, backups = page });
             }
             catch (Exception e) { return Error(request.id, e.Message); }

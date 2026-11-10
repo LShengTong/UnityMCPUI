@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "UiOffset": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-python-name": "UiOffset",
+      "properties": {
+        "x": {
+          "type": "number",
+          "minimum": -16384,
+          "maximum": 16384,
+          "x-csharp-default": "float.NaN"
+        },
+        "y": {
+          "type": "number",
+          "minimum": -16384,
+          "maximum": 16384,
+          "x-csharp-default": "float.NaN"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "UiPrefabNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-python-name": "UiNode",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\x00-\\x1f]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "image",
+            "text",
+            "button",
+            "prefab"
+          ],
+          "default": "panel"
+        },
+        "width": {
+          "type": "number",
+          "default": 320,
+          "maximum": 16384,
+          "exclusiveMinimum": 0,
+          "x-unity-presence": true
+        },
+        "height": {
+          "type": "number",
+          "default": 80,
+          "maximum": 16384,
+          "exclusiveMinimum": 0,
+          "x-unity-presence": true
+        },
+        "x": {
+          "type": "number",
+          "default": 0,
+          "minimum": -16384,
+          "maximum": 16384,
+          "x-unity-presence": true
+        },
+        "y": {
+          "type": "number",
+          "default": 0,
+          "minimum": -16384,
+          "maximum": 16384,
+          "x-unity-presence": true
+        },
+        "anchor": {
+          "type": "string",
+          "enum": [
+            "top_left",
+            "top_center",
+            "top_right",
+            "center_left",
+            "center",
+            "center_right",
+            "bottom_left",
+            "bottom_center",
+            "bottom_right",
+            "stretch_horizontal_top",
+            "stretch_horizontal_center",
+            "stretch_horizontal_bottom",
+            "stretch_vertical_left",
+            "stretch_vertical_center",
+            "stretch_vertical_right",
+            "stretch"
+          ],
+          "x-python-alias": "AnchorPreset",
+          "default": "center",
+          "description": "Choose a fixed corner/edge or stretch preset to match layout intent. Parent LayoutGroup may drive anchors.",
+          "x-unity-presence": true
+        },
+        "offset_min": {
+          "default": null,
+          "description": "Explicit left/bottom offset in parent units; overrides calculated geometry.",
+          "x-unity-presence": true,
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiOffset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "offset_max": {
+          "default": null,
+          "description": "Explicit right/top offset; negative x/y mean inward margins on stretched axes.",
+          "x-unity-presence": true,
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UiOffset"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "color": {
+          "type": "string",
+          "default": "#FFFFFF",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "maxLength": 4096
+        },
+        "text_color": {
+          "type": "string",
+          "default": "#202020",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        "font_size": {
+          "type": "number",
+          "default": 24,
+          "maximum": 512,
+          "exclusiveMinimum": 0
+        },
+        "font_path": {
+          "type": "string",
+          "default": ""
+        },
+        "sprite_path": {
+          "type": "string",
+          "default": ""
+        },
+        "layout": {
+          "type": "string",
+          "enum": [
+            "none",
+            "vertical",
+            "horizontal",
+            "grid"
+          ],
+          "default": "none"
+        },
+        "spacing": {
+          "type": "number",
+          "default": 12,
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "padding": {
+          "type": "integer",
+          "default": 16,
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiPrefabNode"
+          },
+          "default": [],
+          "maxItems": 128
+        },
+        "prefab_path": {
+          "type": "string",
+          "default": "",
+          "description": "Existing Assets/...prefab for kind=prefab; preserves nested prefab connection."
+        },
+        "text_alignment": {
+          "type": "string",
+          "enum": [
+            "TopLeft",
+            "Top",
+            "TopRight",
+            "Left",
+            "Center",
+            "Right",
+            "BottomLeft",
+            "Bottom",
+            "BottomRight",
+            "Justified",
+            "Flush"
+          ],
+          "default": "Center"
+        },
+        "word_wrap": {
+          "type": "boolean",
+          "default": true
+        },
+        "auto_size": {
+          "type": "boolean",
+          "default": false
+        },
+        "font_size_min": {
+          "type": "number",
+          "default": 18,
+          "minimum": 1,
+          "maximum": 512
+        },
+        "font_size_max": {
+          "type": "number",
+          "default": 72,
+          "minimum": 1,
+          "maximum": 512
+        },
+        "text_overflow": {
+          "type": "string",
+          "enum": [
+            "Overflow",
+            "Ellipsis",
+            "Masking",
+            "Truncate",
+            "Page"
+          ],
+          "default": "Overflow"
+        },
+        "line_spacing": {
+          "type": "number",
+          "default": 0,
+          "minimum": -512,
+          "maximum": 512
+        },
+        "image_type": {
+          "type": "string",
+          "enum": [
+            "Simple",
+            "Sliced",
+            "Tiled",
+            "Filled"
+          ],
+          "default": "Simple"
+        },
+        "preserve_aspect": {
+          "type": "boolean",
+          "default": false
+        },
+        "fill_method": {
+          "type": "string",
+          "enum": [
+            "Horizontal",
+            "Vertical",
+            "Radial90",
+            "Radial180",
+            "Radial360"
+          ],
+          "default": "Radial360"
+        },
+        "fill_origin": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 3
+        },
+        "fill_amount": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "fill_clockwise": {
+          "type": "boolean",
+          "default": true
+        },
+        "raycast_target": {
+          "type": "boolean",
+          "default": false,
+          "x-unity-presence": true
+        },
+        "child_alignment": {
+          "type": "string",
+          "enum": [
+            "UpperLeft",
+            "UpperCenter",
+            "UpperRight",
+            "MiddleLeft",
+            "MiddleCenter",
+            "MiddleRight",
+            "LowerLeft",
+            "LowerCenter",
+            "LowerRight"
+          ],
+          "default": "MiddleCenter"
+        },
+        "child_control_width": {
+          "type": "boolean",
+          "default": true
+        },
+        "child_control_height": {
+          "type": "boolean",
+          "default": true
+        },
+        "child_force_expand_width": {
+          "type": "boolean",
+          "default": false
+        },
+        "child_force_expand_height": {
+          "type": "boolean",
+          "default": false
+        },
+        "child_scale_width": {
+          "type": "boolean",
+          "default": false
+        },
+        "child_scale_height": {
+          "type": "boolean",
+          "default": false
+        },
+        "grid_constraint": {
+          "type": "string",
+          "enum": [
+            "Flexible",
+            "FixedColumnCount",
+            "FixedRowCount"
+          ],
+          "default": "Flexible"
+        },
+        "grid_constraint_count": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 2000
+        },
+        "grid_start_corner": {
+          "type": "string",
+          "enum": [
+            "UpperLeft",
+            "UpperRight",
+            "LowerLeft",
+            "LowerRight"
+          ],
+          "default": "UpperLeft"
+        },
+        "grid_start_axis": {
+          "type": "string",
+          "enum": [
+            "Horizontal",
+            "Vertical"
+          ],
+          "default": "Horizontal"
+        },
+        "grid_cell_size": {
+          "$ref": "#/$defs/UiOffset",
+          "default": {
+            "x": 100,
+            "y": 100
+          }
+        },
+        "grid_spacing": {
+          "$ref": "#/$defs/UiOffset",
+          "default": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "UiPrefabSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-python-name": "UiPrefabSpec",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[^/\\\\\\x00-\\x1f]+$"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UiPrefabNode"
+          },
+          "minItems": 1,
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "name",
+        "children"
+      ]
+    }
+  }
+}

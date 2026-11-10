@@ -20,13 +20,7 @@ namespace UnityMcp.Editor
 
         static void Validate(PreviewUiPrefabRequest request) => RequestProtocolValidation.Validate(request);
 
-        [Serializable] sealed class Reply
-        {
-            public string id, instance_id, asset_path, version, error, png_base64;
-            public bool ok;
-            public int width, height;
-        }
-        static string Error(string id, string message) => JsonUtility.ToJson(new Reply {
+        static string Error(string id, string message) => JsonUtility.ToJson(new PreviewUiPrefabReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message
         });
 
@@ -73,6 +67,11 @@ namespace UnityMcp.Editor
                 if (instance.GetComponent<Canvas>() == null)
                 {
                     var wrapper = new GameObject("UI Preview Canvas", typeof(RectTransform), typeof(Canvas));
+                    // A newly added Canvas can default to WorldSpace; this wrapper is screen-space UI.
+                    var wrapperCanvas = wrapper.GetComponent<Canvas>();
+                    wrapperCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+                    wrapperCanvas.worldCamera = camera;
+                    wrapperCanvas.planeDistance = 100;
                     preview.AddSingleGO(wrapper);
                     var scaler = wrapper.AddComponent<UnityEngine.UI.CanvasScaler>();
                     scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -98,7 +97,7 @@ namespace UnityMcp.Editor
                 byte[] png = image.EncodeToPNG();
                 if (png == null || png.Length > 12 * 1024 * 1024) throw new Exception("Preview image exceeds size limit");
                 CheckDeadline(request);
-                return JsonUtility.ToJson(new Reply {
+                return JsonUtility.ToJson(new PreviewUiPrefabReply {
                     id = request.id, instance_id = EditorInstanceInfo.InstanceId, asset_path = request.asset_path,
                     version = version, ok = true, width = image.width, height = image.height,
                     png_base64 = Convert.ToBase64String(png)
@@ -133,7 +132,7 @@ namespace UnityMcp.Editor
             {
                 if (!canvas.isRootCanvas) continue;
                 if (canvas.renderMode == RenderMode.WorldSpace)
-                    throw new Exception("World-space Canvas preview is not supported yet");
+                    throw new Exception("World-space Canvas preview is not supported: " + canvas.name);
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = camera;
                 canvas.planeDistance = 100;

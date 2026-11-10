@@ -62,6 +62,7 @@ namespace UnityMcp.Editor
             if (change == null || change.value == null || change.value.Length > 4096)
                 throw new Exception("Invalid change value");
             string value = change.value;
+            if (UiVisualPropertyUtility.TryApply(node, change.property, value)) return;
             switch (change.property)
             {
                 case "preferred_width": Need<UnityEngine.UI.LayoutElement>(node).preferredWidth = Number(value, -1, 16384); break;

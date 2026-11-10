@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityMcp.Editor
@@ -20,10 +21,10 @@ namespace UnityMcp.Editor
 
         static void Validate(InspectUiAssetsRequest request) => RequestProtocolValidation.Validate(request);
 
-        static string Error(string id, string message) => JsonUtility.ToJson(new ReplyHeader {
+        static string Error(string id, string message) => JsonUtility.ToJson(new InspectUiAssetsReply {
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message
         });
-        static string Execute(InspectUiAssetsRequest request)
+        internal static string Execute(InspectUiAssetsRequest request)
         {
             var results = new List<UiAssetInspectionResult>();
             for (int i = 0; i < request.assets.Length; i++)
@@ -37,10 +38,12 @@ namespace UnityMcp.Editor
                 }
                 catch (Exception e) { results.Add(new UiAssetInspectionResult { index = i, asset_type = query?.asset_type, error = e.Message }); }
             }
-            string header = JsonUtility.ToJson(new ReplyHeader {
+            string header = JsonUtility.ToJson(new QueryReplyHeader {
                 id = request.id, instance_id = EditorInstanceInfo.InstanceId, ok = true
             });
-            return header.Substring(0, header.Length - 1) + ",\"results\":" + JsonReplySerializer.Array(results) + "}";
+            // Serialize runtime types to retain type-specific generated fields.
+            return header.Substring(0, header.Length - 1) + ",\"results\":[" +
+                string.Join(",", results.Select(result => JsonUtility.ToJson(result))) + "]}";
         }
     }
 }

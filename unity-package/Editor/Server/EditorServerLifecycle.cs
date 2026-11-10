@@ -12,13 +12,15 @@ namespace UnityMcp.Editor
         static EditorTaskQueue tasks;
         static EditorHttpRequestHandler handler;
         static volatile bool stopped = true;
+        static bool shuttingDown;
+        static double nextStart;
+        static string lastStartError;
 
         static EditorServerLifecycle()
         {
             AssemblyReloadEvents.beforeAssemblyReload += Stop;
             EditorApplication.quitting += Stop;
             EditorApplication.update += Update;
-            EditorApplication.delayCall += Start;
         }
         static void Start()
         {
@@ -32,14 +34,34 @@ namespace UnityMcp.Editor
                 stopped = false;
                 portListener.Open();
                 EditorDiscoveryFile.Write(portListener.Port);
+                lastStartError = null;
             }
-            catch (Exception e) { Stop(); Debug.LogError("Unity MCP HTTP startup failed: " + e.Message); }
+            catch (Exception e)
+            {
+                Cleanup();
+                nextStart = EditorApplication.timeSinceStartup + 2;
+                if (lastStartError != e.Message)
+                    Debug.LogError("Unity MCP HTTP startup failed; retrying every 2 seconds: " + e.Message);
+                lastStartError = e.Message;
+            }
         }
         static void Update()
         {
+            if (shuttingDown) return;
+            if (stopped)
+            {
+                if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.timeSinceStartup < nextStart) return;
+                Start();
+            }
             if (!stopped) tasks.Update();
         }
         static void Stop()
+        {
+            // beforeAssemblyReload/quitting must never start a listener again in this domain.
+            shuttingDown = true;
+            Cleanup();
+        }
+        static void Cleanup()
         {
             stopped = true;
             if (portListener != null && handler != null) portListener.ContextReceived -= handler.OnContextReceived;
