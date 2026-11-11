@@ -326,6 +326,13 @@ namespace UnityMcp.Editor
         public float timeout_seconds = 2f;
         public int width = 0;
         public int height = 0;
+        public float x = 0f;
+        public float y = 0f;
+        public int frames = 1;
+        public string target_path = "";
+        public string button = "left";
+        public float scroll_x = 0f;
+        public float scroll_y = 0f;
     }
 
     [Serializable] internal sealed class RunUiTestRequest : IEditorRequest
@@ -372,6 +379,34 @@ namespace UnityMcp.Editor
         public UiPrefabSpec spec;
         string IEditorRequest.Id => id;
         double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] public sealed class PointerMoveStep
+    {
+        public string action;
+        public float x = 0f;
+        public float y = 0f;
+        public int frames = 1;
+        public string target_path = "";
+    }
+
+    [Serializable] public sealed class PointerDownStep
+    {
+        public string action;
+        public string button = "left";
+    }
+
+    [Serializable] public sealed class PointerUpStep
+    {
+        public string action;
+        public string button = "left";
+    }
+
+    [Serializable] public sealed class PointerScrollStep
+    {
+        public string action;
+        public float scroll_x = 0f;
+        public float scroll_y = 0f;
     }
 
     [Serializable] public sealed class UiOffset
@@ -788,6 +823,10 @@ namespace UnityMcp.Editor
                 case "assert": Validate(new AssertUiStep { action = value.action, path = value.path, property = value.property, expected = value.expected, component_type = value.component_type, field_path = value.field_path }, depth + 1); break;
                 case "wait_condition": Validate(new WaitUiConditionStep { action = value.action, path = value.path, property = value.property, expected = value.expected, component_type = value.component_type, field_path = value.field_path, timeout_seconds = value.timeout_seconds }, depth + 1); break;
                 case "screenshot": Validate(new ScreenshotUiStep { action = value.action, width = value.width, height = value.height }, depth + 1); break;
+                case "pointer_move": Validate(new PointerMoveStep { action = value.action, x = value.x, y = value.y, frames = value.frames, target_path = value.target_path }, depth + 1); break;
+                case "pointer_down": Validate(new PointerDownStep { action = value.action, button = value.button }, depth + 1); break;
+                case "pointer_up": Validate(new PointerUpStep { action = value.action, button = value.button }, depth + 1); break;
+                case "pointer_scroll": Validate(new PointerScrollStep { action = value.action, scroll_x = value.scroll_x, scroll_y = value.scroll_y }, depth + 1); break;
                 default: throw new Exception("Unknown operation action");
             }
         }
@@ -838,6 +877,42 @@ namespace UnityMcp.Editor
             if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid CreateUiPrefabRequest.deadline");
             if (value.output_path == null) throw new Exception("Invalid CreateUiPrefabRequest.output_path");
             Validate(value.spec, depth + 1);
+        }
+
+        public static void Validate(PointerMoveStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing PointerMoveStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "pointer_move")) throw new Exception("Invalid PointerMoveStep.action");
+            if (float.IsNaN(value.x) || float.IsInfinity(value.x) || value.x < -16384 || value.x > 16384) throw new Exception("Invalid PointerMoveStep.x");
+            if (float.IsNaN(value.y) || float.IsInfinity(value.y) || value.y < -16384 || value.y > 16384) throw new Exception("Invalid PointerMoveStep.y");
+            if (value.frames < 1 || value.frames > 60) throw new Exception("Invalid PointerMoveStep.frames");
+            if ((value.target_path != null && value.target_path.Length > 512)) throw new Exception("Invalid PointerMoveStep.target_path");
+        }
+
+        public static void Validate(PointerDownStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing PointerDownStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "pointer_down")) throw new Exception("Invalid PointerDownStep.action");
+            if ((value.button != "left" && value.button != "right" && value.button != "middle")) throw new Exception("Invalid PointerDownStep.button");
+        }
+
+        public static void Validate(PointerUpStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing PointerUpStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "pointer_up")) throw new Exception("Invalid PointerUpStep.action");
+            if ((value.button != "left" && value.button != "right" && value.button != "middle")) throw new Exception("Invalid PointerUpStep.button");
+        }
+
+        public static void Validate(PointerScrollStep value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing PointerScrollStep");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.action == null || (value.action != "pointer_scroll")) throw new Exception("Invalid PointerScrollStep.action");
+            if (float.IsNaN(value.scroll_x) || float.IsInfinity(value.scroll_x) || value.scroll_x < -100 || value.scroll_x > 100) throw new Exception("Invalid PointerScrollStep.scroll_x");
+            if (float.IsNaN(value.scroll_y) || float.IsInfinity(value.scroll_y) || value.scroll_y < -100 || value.scroll_y > 100) throw new Exception("Invalid PointerScrollStep.scroll_y");
         }
 
         public static void Validate(UiOffset value, int depth = 0)

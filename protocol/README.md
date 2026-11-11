@@ -48,7 +48,11 @@ Python 连接层统一引用生成的 `Endpoints` 和 `HTTP_METHODS`，请求、
 
 ## 业务校验与传输边界
 
-Python 的 UI 参数直接使用生成模型，检查协议字段类型、枚举和基础约束；树深度、总节点数、同级重名、非空文字、节点类型组合、字号关系及 Grid/ScrollRect 等业务规则统一由 Unity 执行前检查，通过结构化失败响应返回。`ui_schema.py` 的重复包装已删除。`asset_schema.py` 仍补充资源查询文字的 UTF-16 长度限制。连接层根据生成的 `REQUEST_MODELS` 组装请求，MCP 只暴露业务参数，`id`、`deadline` 仍由连接层自动补齐。
+图片导入和静态预览接口由 server.py 直接调用 EditorConnection.request，再使用 image_utils.py 完成图片转换。image_utils 只提供本地 PNG/JPEG 读取、Base64 编解码和 PNG 头部/结束标记、体积及声明尺寸检查（不是完整图片解码），不依赖 bridge、路由或具体工具接口。静态预览与 Play 截图使用同一检查函数；bridge 保留测试步骤、实例和请求尺寸的对应检查。每次测试的截图次数及宽高组合由 Unity RuntimeUiTestRunner 在执行前检查。
+
+Python 的 EditorConnection.request 统一按生成的路由选择 GET/POST、请求和响应模型，完成请求 ID/截止时间、默认值、体积限制、HTTP 发送、实例/请求身份及响应校验。创建和批量添加节点的显式字段标记也在此统一编码。普通工具由 server.py 组装参数后直接调用 request，不在 bridge 中增加只转调的同名方法；图片导入保留本地文件读取与 Base64 编码，预览/运行时截图保留图片解码及尺寸核对。路径有效性、资源是否存在、拒绝覆盖等执行规则由 Unity 检查，Python 不再单独实现创建请求的发送流程，也不手写批量动作到模型的对应表。写请求不会自动重试，通信失败时仍需先检查目标资源。
+
+Python 的 UI 和资源查询参数直接使用生成模型，检查协议字段类型、枚举和基础约束；树深度、总节点数、同级重名、非空文字、节点类型组合、字号关系及 Grid/ScrollRect 等业务规则统一由 Unity 执行前检查，通过结构化失败响应返回。字体查询的 UTF-16 长度限制由 Unity 的 TmpFontAssetQuery 检查；Python 不再维护 `ui_schema.py`、`asset_schema.py` 包装层。连接层根据生成的 `REQUEST_MODELS` 组装请求，MCP 只暴露业务参数，`id`、`deadline` 仍由连接层自动补齐。
 
 所有普通 Unity Handler 引用生成请求类型，通过 `RequestProtocolValidation.Validate` 校验范围、枚举及嵌套字段，再调用既有业务工具。资源路径、字体、组件、保存和版本等校验仍由业务层负责。
 

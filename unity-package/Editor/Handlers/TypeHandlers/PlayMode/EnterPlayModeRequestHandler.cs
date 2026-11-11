@@ -12,7 +12,7 @@ namespace UnityMcp.Editor
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message });
         internal static string Execute(EnterPlayModeRequest request)
         {
-            var changed = PlayModeSession.Enter(request);
+            var changed = PlayModeSession.Enter(request.deadline, request.mode, request.reference_width, request.reference_height);
             return JsonUtility.ToJson(new EnterPlayModeReply { id = request.id, instance_id = EditorInstanceInfo.InstanceId, ok = true,
                 transition_requested = changed, session_id = PlayModeSession.Id,
                 test_mode = IsolatedPlayScene.Active ? "isolated" : "current", test_scene_path = IsolatedPlayScene.ScenePath,

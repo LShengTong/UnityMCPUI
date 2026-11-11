@@ -30,8 +30,7 @@ namespace UnityMcp.Editor.Tests
         }
         TMP_FontAsset Create(string mode = "dynamic")
         {
-            var font = TmpFontUtility.Create(new CreateTmpFontRequest { source_font_path = source,
-                asset_path = output, characters = "AB", population_mode = mode }, out var missing);
+            var font = TmpFontUtility.Create(source, output, "AB", mode, 48, 1024, 5, out var missing);
             Assert.That(missing, Is.Empty, "Fixture source font must contain Latin A and B");
             return font;
         }
@@ -44,12 +43,11 @@ namespace UnityMcp.Editor.Tests
             Assert.That(font.isMultiAtlasTexturesEnabled, Is.False);
             var serialized = new SerializedObject(font);
             Assert.That(serialized.FindProperty("m_ClearDynamicDataOnBuild").boolValue, Is.True);
-            font = TmpFontUtility.Update(new UpdateTmpFontCharactersRequest { asset_path = output, characters = "C" }, out var missing);
+            font = TmpFontUtility.Update(output, "C", "append", out var missing);
             Assert.That(missing, Is.Empty);
             Assert.That(font.HasCharacter('A'), Is.True);
             Assert.That(font.HasCharacter('C'), Is.True);
-            font = TmpFontUtility.Update(new UpdateTmpFontCharactersRequest { asset_path = output,
-                characters = "B\nB\t", mode = "replace" }, out missing);
+            font = TmpFontUtility.Update(output, "B\nB\t", "replace", out missing);
             Assert.That(missing, Is.Empty);
             AssetDatabase.ImportAsset(output, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(output);
@@ -63,8 +61,7 @@ namespace UnityMcp.Editor.Tests
         [Test] public void MissingCharactersAreReportedAndCreationNeverOverwrites()
         {
             var font = Create();
-            TmpFontUtility.Update(new UpdateTmpFontCharactersRequest { asset_path = output,
-                characters = char.ConvertFromUtf32(0x10FFFF) }, out var missing);
+            TmpFontUtility.Update(output, char.ConvertFromUtf32(0x10FFFF), "append", out var missing);
             Assert.That(TmpFontUtility.Missing(missing), Does.Contain("U+10FFFF"));
             byte[] saved = File.ReadAllBytes(output);
             Assert.Throws<Exception>(() => Create());

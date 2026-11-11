@@ -1004,7 +1004,7 @@ namespace UnityMcp.Editor
             if (value.actual == null || (value.actual != null && value.actual.Length > 4096)) throw new Exception("Invalid UiTestStepResult.actual");
             if (value.error == null || (value.error != null && value.error.Length > 2048)) throw new Exception("Invalid UiTestStepResult.error");
             if (value.png_base64 == null || (value.png_base64 != null && value.png_base64.Length > 16777216)) throw new Exception("Invalid UiTestStepResult.png_base64");
-            if (value.interaction_mode == null || (value.interaction_mode != null && value.interaction_mode.Length > 512) || (value.interaction_mode != "callback")) throw new Exception("Invalid UiTestStepResult.interaction_mode");
+            if (value.interaction_mode == null || (value.interaction_mode != null && value.interaction_mode.Length > 512) || (value.interaction_mode != "callback" && value.interaction_mode != "pointer" && value.interaction_mode != "mixed")) throw new Exception("Invalid UiTestStepResult.interaction_mode");
         }
 
         public static void Validate(EnterPlayModeReply value, int depth = 0)
@@ -1105,7 +1105,7 @@ namespace UnityMcp.Editor
             if ((value.test_instance_id != null && value.test_instance_id.Length > 512)) throw new Exception("Invalid RunUiTestReply.test_instance_id");
             if (value.steps != null)
                 foreach (var item in value.steps) Validate(item, depth + 1);
-            if ((value.interaction_mode != "callback")) throw new Exception("Invalid RunUiTestReply.interaction_mode");
+            if ((value.interaction_mode != "callback" && value.interaction_mode != "pointer" && value.interaction_mode != "mixed")) throw new Exception("Invalid RunUiTestReply.interaction_mode");
             if ((value.saved_scene != false)) throw new Exception("Invalid RunUiTestReply.saved_scene");
             if (value.ok == false)
             {

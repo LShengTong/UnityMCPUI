@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import time
 import httpx
-import base64
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,7 +14,8 @@ from mcp.types import ToolAnnotations, TextContent
 from pydantic import Field
 from .generated.requests import UiPrefabSpec, UiNodeAddition, UiNodeDeletion, UiNodeMove, UiPropertyModification, UiComponentAddition, UiNodeDuplication, UiPrefabInstantiation, UiScriptAddition, UiReferenceAssignment
 from .bridge import EditorConnection
-from .asset_schema import UiAssetSearch, UiAssetInspection
+from .image_utils import read_image, encode_base64, decode_base64, decode_png
+from .generated.requests import UiAssetSearch, UiAssetInspection
 from .generated.requests import UiTestStep
 from .generated.routes import Endpoints
 
@@ -68,7 +68,7 @@ def create_server() -> FastMCP:
         missing_codepoints even when ok=true. Assign the returned asset_path using font_path on UI
         creation or modification. This creates a font asset, not a new font design or OS font import.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.CREATE_TMP_FONT,
+        return await require_editor(ctx).request(Endpoints.CREATE_TMP_FONT,
             {"source_font_path": source_font_path, "asset_path": asset_path, "characters": characters,
              "population_mode": population_mode, "sampling_point_size": sampling_point_size,
              "atlas_size": atlas_size, "padding": padding})
@@ -84,7 +84,7 @@ def create_server() -> FastMCP:
         Missing glyphs are reported even when ok=true; partial character coverage is saved. Does not
         change UI text content or assign fonts to nodes. Exceptions restore the saved asset bytes.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.UPDATE_TMP_FONT_CHARACTERS,
+        return await require_editor(ctx).request(Endpoints.UPDATE_TMP_FONT_CHARACTERS,
             {"asset_path": asset_path, "characters": characters, "mode": mode})
 
     @mcp.tool(annotations=ToolAnnotations(
@@ -130,7 +130,7 @@ def create_server() -> FastMCP:
         Success means Refresh returned, not successful compilation. Poll get_compilation_status.
         Assembly reload may interrupt this response; query status before retrying.
         """
-        return await require_editor(ctx).refresh_assets()
+        return await require_editor(ctx).request(Endpoints.REFRESH_ASSETS, {})
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False,
@@ -149,12 +149,12 @@ def create_server() -> FastMCP:
         while True:
             editor = require_editor(ctx)
             try:
-                result = await editor.compilation_status()
+                result = await editor.request(Endpoints.COMPILATION_STATUS)
             except RuntimeError:
                 try:
                     replacement = await EditorConnection.connect(editor.project)
                     try:
-                        result = await replacement.compilation_status()
+                        result = await replacement.request(Endpoints.COMPILATION_STATUS)
                     except BaseException:
                         await replacement.aclose()
                         raise
@@ -185,12 +185,12 @@ def create_server() -> FastMCP:
         while True:
             editor = require_editor(ctx)
             try:
-                result = await editor.live_status(Endpoints.PLAY_STATUS)
+                result = await editor.request(Endpoints.PLAY_STATUS)
             except RuntimeError:
                 try:
                     replacement = await EditorConnection.connect(editor.project)
                     try:
-                        result = await replacement.live_status(Endpoints.PLAY_STATUS)
+                        result = await replacement.request(Endpoints.PLAY_STATUS)
                     except BaseException:
                         await replacement.aclose()
                         raise
@@ -226,7 +226,7 @@ def create_server() -> FastMCP:
         Returns transition acknowledgement. Follow with get_play_status(wait_for='playing').
         Reload may interrupt delivery; query status before retrying, never blindly resend mutations.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.ENTER_PLAY_MODE,
+        return await require_editor(ctx).request(Endpoints.ENTER_PLAY_MODE,
             {"mode": mode, "reference_width": reference_width, "reference_height": reference_height})
 
     @mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False))
@@ -238,7 +238,7 @@ def create_server() -> FastMCP:
 
         This ends the running game's session, including state outside tool-created instances.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.EXIT_PLAY_MODE, {})
+        return await require_editor(ctx).request(Endpoints.EXIT_PLAY_MODE, {})
 
     @mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False))
     async def inspect_runtime_ui(ctx: Context, test_instance_id: str = "", scene_name: str = "", path: str = "",
@@ -252,7 +252,7 @@ def create_server() -> FastMCP:
         scene_path includes the scene prefix for diagnostics. A scene_path is not a selector argument.
         Requires settled, unpaused Play. Nodes are bounded/truncated, not asset prefab snapshots.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.INSPECT_RUNTIME_UI,
+        return await require_editor(ctx).request(Endpoints.INSPECT_RUNTIME_UI,
             {"test_instance_id": test_instance_id, "scene_name": scene_name, "path": path, "max_nodes": max_nodes})
 
     @mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
@@ -265,14 +265,19 @@ def create_server() -> FastMCP:
         Instantiation executes the prefab's game scripts. Scene is not saved. Root gets an ownership name;
         scripts must preserve it for the tool to resolve/clean the instance across domain reload.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.MOUNT_TEST_PREFAB,
+        return await require_editor(ctx).request(Endpoints.MOUNT_TEST_PREFAB,
             {"prefab_path": prefab_path, "parent_path": parent_path, "scene_name": scene_name})
 
     @mcp.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False))
     async def run_ui_test(test_instance_id: str, steps: list[UiTestStep], ctx: Context) -> Any:
         """Run up to 32 Play-mode UI steps, stopping at first failure; total execution limit 15 seconds.
 
-        Steps: invoke_button (onClick callback, NOT pointer/raycast input), set_input_text (TMP_InputField,
+        Steps: pointer_move (target_path center + pixel offsets x/y, or absolute Game-view pixels from bottom-left;
+        frames=1..60 for dragging), pointer_down/up (button=left/right/middle), pointer_scroll
+        (scroll_x/y wheel ticks at current pointer). Buttons persist within one test and are cleaned up.
+        Pointer steps use the active UI input module and normal raycasting. Input System virtual mouse
+        supports background Play; legacy StandaloneInputModule requires focus. Custom mouse bindings
+        must accept the virtual Mouse. invoke_button (direct onClick callback), set_input_text (TMP_InputField,
         optional notify), assert, wait_condition (timeout_seconds <=10), screenshot (at most one).
         Paths select owned-root descendants via '0/1' indexes or relative NAME paths ('Panel/Label').
         Conditions use property and STRING expected: active_self/active_in_hierarchy/interactable/
@@ -295,7 +300,7 @@ def create_server() -> FastMCP:
         for step in result.get("steps", []):
             encoded = step.pop("png_base64", "")
             if encoded:
-                images.append(Image(data=base64.b64decode(encoded), format="png").to_image_content())
+                images.append(Image(data=decode_base64(encoded), format="png").to_image_content())
                 step["screenshot_attached"] = True
         if not images:
             return result
@@ -308,7 +313,7 @@ def create_server() -> FastMCP:
         Does not delete Canvas/EventSystem or save scenes. Destruction happens at frame end; game
         callbacks may run. Renamed or missing roots are not destroyed without verified ownership.
         """
-        return await require_editor(ctx)._request_ui_query(Endpoints.CLEAR_TEST_INSTANCES, {"test_instance_id": test_instance_id})
+        return await require_editor(ctx).request(Endpoints.CLEAR_TEST_INSTANCES, {"test_instance_id": test_instance_id})
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False,
@@ -340,7 +345,9 @@ def create_server() -> FastMCP:
         the destination scene must have exactly one EventSystem with the appropriate input module.
         """
         editor = require_editor(ctx)
-        return await editor.create_prefab(output_path, spec.model_dump(exclude_unset=True))
+        return await editor.request(Endpoints.CREATE_UI_PREFAB, {
+            "output_path": output_path, "spec": spec.model_dump(exclude_unset=True),
+        })
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False,
@@ -357,9 +364,17 @@ def create_server() -> FastMCP:
         Requires a Unity Editor with graphics support; image display depends on the MCP client.
         Success returns a PNG image; Unity business failure returns the full ok=false JSON response.
         """
-        png = await require_editor(ctx).preview_ui_prefab(asset_path, width, height, background)
-        if isinstance(png, dict):
-            return png
+        result = await require_editor(ctx).request(Endpoints.PREVIEW_UI_PREFAB, {
+            "asset_path": asset_path, "width": width, "height": height, "background": background,
+        })
+        if not result.get("ok"):
+            return result
+        if (result["width"], result["height"]) != (width, height):
+            raise RuntimeError("Preview image dimensions or identity mismatch")
+        try:
+            png = decode_png(result["png_base64"], width, height)
+        except ValueError as exc:
+            raise RuntimeError(f"Invalid preview image: {exc}") from exc
         return Image(data=png, format="png")
 
     @mcp.tool(annotations=ToolAnnotations(
@@ -378,8 +393,13 @@ def create_server() -> FastMCP:
         set image_type to Sliced for nine-slice rendering. No network image download is performed.
         On timeout inspect the destination before retrying; importing may have completed.
         """
-        return await require_editor(ctx).import_ui_image(
-            source_path, asset_path, border, pixels_per_unit, filter_mode)
+        editor = require_editor(ctx)
+        data, _, _, _ = await asyncio.to_thread(read_image, source_path)
+        return await editor.request(Endpoints.IMPORT_UI_IMAGE, {
+            "asset_path": asset_path, "image_base64": encode_base64(data),
+            "border": [0, 0, 0, 0] if border is None else border,
+            "pixels_per_unit": pixels_per_unit, "filter_mode": filter_mode,
+        })
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False,
@@ -433,8 +453,10 @@ def create_server() -> FastMCP:
         do not imply a saved prefab. Transport/validation failures still raise tool errors. Re-inspect on
         success; after transport failure inspect before retrying because saving may have completed.
         """
-        return await require_editor(ctx).batch_edit_ui_prefab(
-            asset_path, expected_version, [operation.model_dump(exclude_unset=True) for operation in operations])
+        return await require_editor(ctx).request(Endpoints.BATCH_EDIT_UI_PREFAB, {
+            "asset_path": asset_path, "expected_version": expected_version,
+            "operations": [operation.model_dump(exclude_unset=True) for operation in operations],
+        })
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False,
@@ -447,7 +469,9 @@ def create_server() -> FastMCP:
         Sprite sheets return each Sprite separately with a string local_id for inspection.
         Query does not import, save or generate assets. Packages are excluded.
         """
-        return await require_editor(ctx).find_ui_assets([query.model_dump(mode="json") for query in queries])
+        return await require_editor(ctx).request(Endpoints.FIND_UI_ASSETS, {
+            "queries": [query.model_dump(mode="json") for query in queries],
+        })
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False,
@@ -465,7 +489,9 @@ def create_server() -> FastMCP:
         configured fallback chain/global settings. Checks existing glyphs only, NEVER dynamically
         adds characters. Missing glyphs do not prove a dynamic source font cannot generate them.
         """
-        return await require_editor(ctx).inspect_ui_assets([asset.model_dump(mode="json") for asset in assets])
+        return await require_editor(ctx).request(Endpoints.INSPECT_UI_ASSETS, {
+            "assets": [asset.model_dump(mode="json") for asset in assets],
+        })
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False,
@@ -477,7 +503,9 @@ def create_server() -> FastMCP:
         summary, original GUID and before/after versions. Empty after_version can mean saving or
         metadata completion did not finish. Stored under Library/UnityMcp/Backups, lost if cleaned.
         """
-        return await require_editor(ctx).list_ui_backups(asset_path, limit, offset)
+        return await require_editor(ctx).request(Endpoints.LIST_UI_BACKUPS, {
+            "asset_path": asset_path, "limit": limit, "offset": offset,
+        })
 
     @mcp.tool(annotations=ToolAnnotations(
         readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False,
@@ -491,7 +519,9 @@ def create_server() -> FastMCP:
         version and restored_from. Only restores prefab bytes, not fonts/images/nested dependencies.
         On transport failure inspect before retrying; restore may have completed. No restore-as-copy.
         """
-        return await require_editor(ctx).restore_ui_prefab(backup_id, expected_version)
+        return await require_editor(ctx).request(Endpoints.RESTORE_UI_PREFAB, {
+            "backup_id": backup_id, "expected_version": expected_version,
+        })
 
     return mcp
 

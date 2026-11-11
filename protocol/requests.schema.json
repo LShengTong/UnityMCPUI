@@ -1182,6 +1182,18 @@
         },
         {
           "$ref": "#/$defs/ScreenshotUiStep"
+        },
+        {
+          "$ref": "#/$defs/PointerMoveStep"
+        },
+        {
+          "$ref": "#/$defs/PointerDownStep"
+        },
+        {
+          "$ref": "#/$defs/PointerUpStep"
+        },
+        {
+          "$ref": "#/$defs/PointerScrollStep"
         }
       ],
       "x-discriminator": "action"
@@ -1341,6 +1353,122 @@
         "deadline",
         "output_path",
         "spec"
+      ]
+    },
+    "PointerMoveStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "pointer_move"
+          ]
+        },
+        "x": {
+          "type": "number",
+          "default": 0,
+          "minimum": -16384,
+          "maximum": 16384
+        },
+        "y": {
+          "type": "number",
+          "default": 0,
+          "minimum": -16384,
+          "maximum": 16384
+        },
+        "frames": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Interpolate movement over this many rendered frames, retaining held mouse buttons."
+        },
+        "target_path": {
+          "type": "string",
+          "default": "",
+          "maxLength": 512,
+          "description": "Optional target RectTransform relative path. x/y become pixel offsets from its center. Without path x/y are Game-view pixels from bottom-left."
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "PointerDownStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "pointer_down"
+          ]
+        },
+        "button": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "middle"
+          ],
+          "default": "left"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "PointerUpStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "pointer_up"
+          ]
+        },
+        "button": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "middle"
+          ],
+          "default": "left"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "PointerScrollStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "pointer_scroll"
+          ]
+        },
+        "scroll_x": {
+          "type": "number",
+          "default": 0,
+          "minimum": -100,
+          "maximum": 100
+        },
+        "scroll_y": {
+          "type": "number",
+          "default": 0,
+          "minimum": -100,
+          "maximum": 100,
+          "description": "Wheel ticks at the current pointer location. Positive is up."
+        }
+      },
+      "required": [
+        "action"
       ]
     }
   }

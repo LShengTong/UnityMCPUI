@@ -2,9 +2,9 @@
 
 这是 Unity MCP 的 Editor-only UPM 包代码。安装和客户端配置见[项目说明](../../README.md)。
 
-后台执行由 `Handlers/Base/PlayMode/EditorBackgroundLoop` 提供：每 33ms 通过 Unity 内部的线程安全 `EditorApplication.SignalTick` 唤醒编辑器，Unity 资产与场景操作仍由主线程队列执行。整个 Play 会话临时启用 `Application.runInBackground`，退出后恢复原值，SessionState 保留跨程序集重载的恢复信息；原有 run_ui_test 不再单独开关该设置。未暂停的 Play 会额外在主线程调用 QueuePlayerLoopUpdate。此唤醒适配依赖内部 API，方法不可用时输出警告；模态对话框、断点或主线程阻塞仍会阻止执行。它不会把 Unity 窗口切到前台。
+后台执行由 `Server/EditorBackgroundLoop` 提供：每 33ms 通过 Unity 内部的线程安全 `EditorApplication.SignalTick` 唤醒编辑器，Unity 资产与场景操作仍由主线程队列执行。整个 Play 会话临时启用 `Application.runInBackground`，退出后恢复原值，SessionState 保留跨程序集重载的恢复信息；原有 run_ui_test 不再单独开关该设置。未暂停的 Play 会额外在主线程调用 QueuePlayerLoopUpdate。此唤醒适配依赖内部 API，方法不可用时输出警告；模态对话框、断点或主线程阻塞仍会阻止执行。它不会把 Unity 窗口切到前台。
 
-字体写接口放在 `Handlers/TypeHandlers/TmpFonts`：`CreateTmpFontRequestHandler` 处理 `/ui/fonts/create`，`UpdateTmpFontCharactersRequestHandler` 处理 `/ui/fonts/characters`，共用的 `TmpFontUtility` 执行字形生成与资产保存。请求、响应和路由由协议生成；Python 工具分别为 `create_tmp_font`、`update_tmp_font_characters`。两者都通过主线程资产任务队列执行，仅用于 Edit 模式。创建拒绝覆盖；修改保留 GUID，异常恢复保存前字节。正常完成但源字体缺字或单图集装不下时会保存已生成部分，通过 `all_characters_present` 和 `missing_codepoints` 返回覆盖情况。
+字体写接口放在 `Handlers/TypeHandlers`：`CreateTmpFontRequestHandler` 处理 `/ui/fonts/create`，`UpdateTmpFontCharactersRequestHandler` 处理 `/ui/fonts/characters`。两者调用 `Services/TmpFonts/TmpFontService`，由同目录的 TmpFontUtility 执行字形生成与资产保存。请求、响应和路由由协议生成；Python 工具分别为 `create_tmp_font`、`update_tmp_font_characters`。两者都通过主线程资产任务队列执行，仅用于 Edit 模式。创建拒绝覆盖；修改保留 GUID，异常恢复保存前字节。正常完成但源字体缺字或单图集装不下时会保存已生成部分，通过 `all_characters_present` 和 `missing_codepoints` 返回覆盖情况。
 
 ## 启动与停止
 
@@ -55,16 +55,19 @@ EditorHttpRequestHandler 检查 Bearer Token，拒绝带 Origin 的请求，然�
 | Server/ | Editor 服务生命周期、监听器、发现文件、实例信息和主线程任务队列 |
 | Handlers/Base/ | HTTP 鉴权与分发入口、请求接口、通用解析、请求体读取和序列化工具 |
 | Protocol/Generated/ | 从共用 JSON Schema 生成的请求、响应、查询参数、详情、批量动作及校验 |
-| Handlers/Base/PrefabUtils/ | 多个 Handler 共用的节点构建、布局、保存和备份工具 |
-| Handlers/TypeHandlers/Compile/ | 编译状态 Handler、资源刷新 Handler 及共用的 EditorCompilationState |
+| Services/ | 创建、批量编辑、预览、字体等业务流程，直接返回结构化结果 |
+| Services/PrefabUtils/ | 共用的节点构建、布局、资源加载保存、备份和节点工具 |
+| Handlers/TypeHandlers/CompilationStatusRequestHandler.cs、RefreshAssetsRequestHandler.cs | 编译状态查询和资源刷新接口 |
+| Server/EditorCompilationState.cs | 编译事件监听、错误收集、刷新状态及跨重载状态保存 |
 | Handlers/TypeHandlers/CreateUiPrefabRequestHandler.cs | 创建 Handler，引用生成的协议类型 |
-| Handlers/TypeHandlers/BatchEditUiPrefab/ | 批量编辑 Handler、编辑生命周期和节点工具；Operations/ 放子操作，参数引用生成的协议类型 |
+| Handlers/TypeHandlers/BatchEditUiPrefabRequestHandler.cs | 批量编辑 Controller，处理 HTTP、调度、响应标识和 JSON |
+| Services/BatchEditUiPrefab/ | 批量编辑 Service、BoundOperation、UiPrefabEditScope；Operations/ 放子操作 |
 | AssetQueries/ | enum、字符串/enum/Query 注册表、共用搜索与各分类回复 |
 | AssetQueries/Base/ | 查询基类、共用搜索、查询结果结构及资源查询工具 |
 | AssetQueries/TypeQueries/ | 各资源类型的查询实现 |
 | UiPrefabVersion.cs | Handler 与资源查询共用的 Prefab 版本工具 |
 
-文件按实际调用链归属：`UiPrefabSpec` 仅用于创建，与共用的 `UiPrefabNode`、`UiOffset` 一起由协议生成；`UiPrefabBridge` 的 Create 和 AddNode 分别供创建、批量编辑使用，因此保留为 Handler 共用工具。`UiPrefabNode`、`UiOffset`、`UiRectTransformUtility`、`UiPrefabSaveUtility` 由创建和批量编辑共用；`UiPrefabBackupStore` 由批量编辑、备份列表和恢复共用。`UiPrefabVersion` 同时用于 Prefab 查询、预览、编辑与恢复；`UiAssetQueryUtility` 按资源查询职责归入 AssetQueries/Base，并供相关 Handler 复用。HTTP 响应封装 `EditorHttpResponse` 归于 Handlers/Base；监听器、生命周期、发现文件、实例信息和主线程队列仍是 Editor 桥接基础设施。
+Handler 作为 Controller：读取请求、执行生成的协议校验、安排主线程工作，提取业务参数调用 Service，再将业务结果映射为 Reply，填入 id/instance_id 并转 JSON。Service 不接收 Request，也不返回 Reply；结果类型放在对应 Service 目录，不包含 HTTP 标识。UiPrefabSpec、UiBatchOperation、UiTestStep 等业务结构仍直接复用，避免重复定义。Play 状态由 Service 发布结构化快照，Handler 负责响应序列化。CreateUiPrefabService 管理完整创建；UiPrefabBridge 只保留共用节点描述校验和构建。批量编辑的绑定、Operations 和编辑 Scope 跟随 Service 放置；UiNodeUtility 同时被 Play 使用，归入共用 PrefabUtils。备份工具仍供批量编辑、备份列表和恢复共用。简单状态查询没有新增仅转调的 Service；HTTP 基础设施、Play 队列和监听生命周期保留原职责。
 
 资源查询统一支持 ui_prefab、sprite、tmp_font。UiAssetQueryRegistry 的三列表管理字符串、enum 和 Query 的对应关系，各分类负责 Matches、专属检查与详情回复。Prefab 层级/版本在 results[i].prefab 中。
 
@@ -113,11 +116,11 @@ EditorHttpRequestHandler 检查 Bearer Token，拒绝带 Origin 的请求，然�
    ```
 
 4. 在 `responses.schema.json` 的 `UiAssetInspectionResult` 中增加类型详情和成功条件，按现有映射定义具体派生 Reply，重新生成后由查询返回。Find/Inspect Handler 负责最终 JSON；Inspect 按运行时类型逐项序列化，避免 JsonUtility 丢失派生字段。
-5. 在 `protocol/requests.schema.json` 同步查询参数的 asset_type 允许值并重新生成。额外业务校验留在 `asset_schema.py`。通常无需新增 HTTP 路由和 MCP 工具，现有 find/inspect 已按类型分发。验证搜索分页、详情、错误类型和 Sprite 等子资源的 `local_id` 行为。
+5. 在 `protocol/requests.schema.json` 同步查询参数的 asset_type 允许值并重新生成。额外业务校验放在对应 Unity Query 的 ValidateInspection/Inspect 中，Python 直接使用生成模型。通常无需新增 HTTP 路由和 MCP 工具，现有 find/inspect 已按类型分发。验证搜索分页、详情、错误类型和 Sprite 等子资源的 `local_id` 行为。
 
 ### 扩展批量编辑
 
-- 新增动作：更新协议中的动作对象及 `UiBatchOperation.oneOf`，重新生成后更新 Handler 的动作白名单、`Bind` 和执行分发；子操作放入 `Operations/`。业务规则统一在 Unity 执行前校验，Python 直接使用生成模型；同步 `bridge.py` 的动作模型映射和 `server.py` 的操作联合类型。新增路径引用应在绑定阶段解析，保留“先绑定、再按顺序执行、最后统一保存”的行为。
+- 新增动作：更新协议中的动作对象及 `UiBatchOperation.oneOf`，重新生成后更新 Services/BatchEditUiPrefab 中 BoundOperation 的动作绑定和 Service 的执行分发；子操作放入该目录的 Operations/。业务规则统一在 Unity 执行前校验，Python 直接使用生成模型；同步 server.py 的操作联合类型。新增路径引用应在绑定阶段解析，保留“先绑定、再按顺序执行、最后统一保存”的行为。
 - 新增可修改属性：更新 `ModifyUiNodePropertiesOperation` 和协议中 `UiPropertyModification`、`UiPropertyChange` 的 property 允许值，重新生成；补齐类型、范围及组件存在性检查。
 - 新增组件：更新 `AddUiComponentOperation` 和协议中的 `UiComponentAddition`，重新生成；补齐组件冲突、引用绑定与参数校验，需要额外节点引用时同步 `Bind`。
 - 验证版本冲突、过期请求、目标被前序动作删除、失败时未保存、成功后的版本和备份。保存与备份复用既有工具，不在每个子操作内单独保存。
@@ -126,9 +129,9 @@ EditorHttpRequestHandler 检查 Bearer Token，拒绝带 Origin 的请求，然�
 
 ## Prefab 编辑与保存
 
-BatchEditUiPrefabRequestHandler 先解析全部已有节点引用，再按顺序调度 modify、add、delete、move、add_component。新节点本批不能通过路径引用。
+BatchEditUiPrefabRequestHandler 调用 BatchEditUiPrefabService，后者先通过 BoundOperation 解析全部已有节点引用，再按顺序调度属性、节点、组件、脚本和引用操作。新节点本批不能通过路径引用。Service 管理计数、失败阶段、最终路径及统一保存；Handler 只负责传输和响应封装。
 
-UiPrefabEditScope 管理版本检查、隔离加载、保存前备份、保存及卸载。UiPrefabSaveUtility 在不激活根节点的情况下保存，再恢复持久化资源的激活状态和目标缩放，避免屏幕空间 Canvas 将隔离场景中的驱动缩放写入资源。创建和编辑共用此保存逻辑。
+UiPrefabEditScope 管理版本检查、隔离加载、保存前备份、保存及卸载。UiPrefabAssetUtility 在不激活根节点的情况下保存，再恢复持久化资源的激活状态和目标缩放，避免屏幕空间 Canvas 将隔离场景中的驱动缩放写入资源。创建和编辑共用此保存逻辑。
 
 UiRectTransformUtility 共用16种锚点预设。可选 offset 通过显式 has_offset_min/has_offset_max 传输标记判断是否应用，避免 JsonUtility 将缺省嵌套对象误当成用户指定值；这些内部标记由 Python 生成。
 
@@ -136,7 +139,7 @@ UiPrefabBackupStore 将原 Prefab 快照及元数据放在 Library/UnityMcp/Back
 
 ## Play 模式测试
 
-`Handlers/TypeHandlers/PlayMode` 放置七个工具对应的 Handler，`Handlers/Base/PlayMode` 提供运行时队列、会话所有权、查询和测试执行。PlayRequestQueue 独立于暂停 Play 执行的资产编辑队列，在主线程调用异步工作并逐帧恢复；排队最多 16 项，HTTP 等待 20 秒，测试执行最多 15 秒。原有 prefab 编辑仍不能在 Play 中执行。
+`Handlers/TypeHandlers/PlayMode` 放置七个工具对应的 Handler，`Services/PlayMode` 管理会话、隔离场景、运行时查询和测试执行。HTTP 主线程调度队列位于 `Handlers/Base/PlayRequestQueue.cs`，独立于暂停 Play 执行的资产编辑队列，在主线程调用异步工作并逐帧恢复；排队最多 16 项，HTTP 等待 20 秒，测试执行最多 15 秒。队列与 Service 分别自动初始化，Service 不依赖 Handler 队列。后台唤醒位于 `Server/EditorBackgroundLoop.cs`。原有 prefab 编辑仍不能在 Play 中执行。
 
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
@@ -154,7 +157,22 @@ EnteredEditMode 后恢复原启动场景、核对/必要时恢复原场景布局
 
 mode=current 保留原场景/原启动场景行为，挂载需显式父路径；isolated 模式可省略 parent_path，默认使用测试 Content。状态包含 test_mode、test_scene_path、test_parent_path、test_scene_error、scene_restore_pending/error。两种模式互切需先退出。SessionState 同时保存测试实例 ID/原生对象 ID，程序集重载后核对 GUID 根名称再恢复引用；退出 Play 清空实例会话。场景查询包含 DontDestroyOnLoad 根，测试内支持相对名称和索引路径；重名时拒绝猜测。源 prefab 根不得有 Canvas，挂载仍需活动 Canvas 与唯一活动 EventSystem/输入模块。
 
-run 等待首帧推进后开始，设置输入和调用 onClick 都不是实际输入模拟。截图等待推进帧后调用 ScreenCapture，临时 PNG 位于 Library/UnityMcp 并按 GUID 路径清理；Game view 不推进或不能截图时返回失败。工具不会保存场景，但游戏脚本仍可以产生自身副作用。Python 校验截图编码/尺寸后以 JSON + 图片附件返回。真实输入、射线遮挡、自动加载测试场景和任意方法执行不在第一版范围。
+run 等待首帧推进后开始。`pointer_move`、`pointer_down`、`pointer_up`、`pointer_scroll` 向现有 UI 输入模块提供鼠标输入，由 EventSystem 处理射线命中、遮挡、点击、拖拽和滚轮。新版 Input System 使用临时虚拟 Mouse，旧版 StandaloneInputModule 使用临时 BaseInput 提供器。旧版模块需要 Unity 保持焦点，新版后台执行需要 Play 帧正常推进及 UI 动作绑定接受该虚拟鼠标。自定义输入模块暂不支持。
+
+`pointer_move` 的 `x/y` 使用 Game view 左下角起算的像素坐标。指定 `target_path` 时改为相对目标 RectTransform 中心的像素偏移，路径相对于挂载的测试实例。`frames` 为 1～60，支持按住鼠标时跨帧移动。`pointer_down/up` 的 `button` 支持 left、right、middle，默认 left。`pointer_scroll` 的 `scroll_x/y` 使用滚轮刻度，y 正数向上。鼠标位置与按键保持到本次 run 结束，超时、失败、退出及重载时清理。不同 run 之间的拖拽需要合并为一次调用。输入步骤完成后使用 assert/wait_condition 验证业务结果。旧 `invoke_button` 直接调用 onClick，set_input_text 直接设置输入框内容。响应的 interaction_mode 区分 callback、pointer、mixed。
+
+点击按钮可传入以下 steps，拖拽时在 down 和 up 之间插入多帧 pointer_move。
+
+```json
+[
+  { "action": "pointer_move", "target_path": "Panel/ConfirmButton" },
+  { "action": "pointer_down" },
+  { "action": "pointer_up" },
+  { "action": "assert", "path": "Panel/ConfirmDialog", "property": "active_self", "expected": "true" }
+]
+```
+
+截图等待推进帧后调用 ScreenCapture，临时 PNG 位于 Library/UnityMcp 并按 GUID 路径清理。Game view 不推进或不能截图时返回失败。游戏脚本可以产生自身副作用。Python 校验截图编码和尺寸后以 JSON 和图片附件返回。
 
 screenshot 的 width/height 为可选整数，必须成对设置为 1～2048；两者为 0 保留当前尺寸。Screen.SetResolution 后等待连续两帧尺寸稳定并更新 Canvas，再捕获并核对 PNG。finally 恢复原宽高/窗口模式并最多额外等待 2 秒确认；重载/退出时另有尽力恢复钩子。这里不操作内部 GameView 预设 API，因此不承诺恢复原 Free Aspect 等下拉模式。切换不生效或恢复失败会报告实际尺寸，不静默回退到静态预览。每次仍限一张截图，多尺寸对同一实例分次运行。
 

@@ -357,19 +357,19 @@ Agent → MCP stdio → Python EditorConnection → 本机 HTTP
 | 路径 | 职责 |
 | --- | --- |
 | `src/unity_mcp/server.py` | MCP 入口和工具注册 |
-| `src/unity_mcp/bridge.py` | Editor 连接、HTTP 请求、身份及路径校验 |
+| `src/unity_mcp/bridge.py` | Editor 连接、统一 HTTP 请求与响应校验、图片传输转换 |
 | `src/unity_mcp/generated/requests.py` | 自动生成的请求模型；UI 业务规则在 Unity 执行前校验 |
-| `src/unity_mcp/asset_schema.py` | 资源查询类型 enum 与参数 |
-| `src/unity_mcp/image_import.py` | 本地图片读取和格式检查 |
+| `src/unity_mcp/image_utils.py` | 通用图片文件读取、Base64 编解码和 PNG 检查，不包含接口调用 |
 | `unity-package/Editor/Handlers/` | 各请求类型对应的 Handler |
 | `unity-package/Editor/Server/` | Editor 服务生命周期、监听器、发现文件、实例信息和主线程任务队列 |
 | `unity-package/Editor/Handlers/Base/` | HTTP 鉴权与分发入口、请求接口、通用解析、请求体读取和序列化工具 |
 | `protocol/` | 请求与响应 Schema，以及唯一的接口绑定表 `routes.json` |
 | `src/unity_mcp/generated/` | 生成的 Python 协议模型 |
 | `unity-package/Editor/Protocol/Generated/` | 生成的 C# 请求、响应、共用数据类型及校验 |
-| `unity-package/Editor/Handlers/Base/PrefabUtils/` | 多个 Handler 共用的节点构建、布局、保存和备份工具 |
+| `unity-package/Editor/Services/PrefabUtils/` | 多个业务共用的节点构建、布局、加载保存、备份和节点工具 |
 | `unity-package/Editor/Handlers/TypeHandlers/CreateUiPrefabRequestHandler.cs` | 创建 Handler，引用生成的协议类型 |
-| `unity-package/Editor/Handlers/TypeHandlers/BatchEditUiPrefab/` | 批量编辑 Handler、编辑生命周期、节点工具及 Operations 子操作；参数引用生成的协议类型 |
+| `unity-package/Editor/Services/` | 创建、批量编辑、预览和字体业务；返回结构化结果，JSON 转换留在 Handler |
+| `unity-package/Editor/Services/BatchEditUiPrefab/` | 批量编辑 Service、路径绑定、编辑生命周期及 Operations 子操作 |
 | `unity-package/Editor/AssetQueries/` | 类型注册表及各资源分类的检测、校验和回复 |
 | `unity-package/Editor/AssetQueries/Base/` | 查询基类、共用搜索、查询结果结构及资源查询工具 |
 | `unity-package/Editor/AssetQueries/TypeQueries/` | 各资源类型的查询实现 |

@@ -12,7 +12,15 @@ namespace UnityMcp.Editor
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message });
         internal static string Execute(InspectRuntimeUiRequest request)
         {
-            return JsonUtility.ToJson(RuntimeUiInspection.Inspect(request));
+            var result = RuntimeUiInspection.Inspect(request.test_instance_id, request.scene_name, request.path, request.max_nodes);
+            return JsonUtility.ToJson(new InspectRuntimeUiReply {
+                id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                ok = result.ok,
+                error = result.error,
+                session_id = result.session_id,
+                nodes = result.nodes,
+                truncated = result.truncated
+            });
         }
     }
 }

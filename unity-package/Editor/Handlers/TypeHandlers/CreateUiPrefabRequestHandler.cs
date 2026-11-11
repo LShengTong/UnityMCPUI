@@ -24,20 +24,15 @@ namespace UnityMcp.Editor
 
         internal static string Execute(CreateUiPrefabRequest request)
         {
-            try
-            {
-                // Recheck at execution time: a valid request may have expired in the queue.
-                double now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
-                if (request.deadline <= now) throw new Exception("Request expired before execution");
-                var result = UiPrefabBridge.Create(request.output_path, request.spec, request.deadline);
-                result.id = request.id;
-                result.instance_id = EditorInstanceInfo.InstanceId;
-                return JsonUtility.ToJson(result);
-            }
-            catch (Exception e)
-            {
-                return Error(request.id, e.Message);
-            }
+            var result = CreateUiPrefabService.Execute(request.deadline, request.output_path, request.spec);
+            return JsonUtility.ToJson(new CreateUiPrefabReply {
+                id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                ok = result.ok,
+                error = result.error,
+                asset_path = result.asset_path,
+                warning = result.warning,
+                node_count = result.node_count
+            });
         }
     }
 }

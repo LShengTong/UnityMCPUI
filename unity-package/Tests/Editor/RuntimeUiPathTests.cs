@@ -36,7 +36,7 @@ namespace UnityMcp.Editor.Tests
         public void RuntimeMutationRejectsEditMode()
         {
             if (UnityEditor.EditorApplication.isPlaying) Assert.Ignore("EditMode check");
-            Assert.Throws<Exception>(() => PlayModeSession.Mount(new MountTestPrefabRequest()));
+            Assert.Throws<Exception>(() => PlayModeSession.Mount(null, "", ""));
             Assert.Throws<Exception>(() => PlayModeSession.Clear(""));
         }
         [Test]

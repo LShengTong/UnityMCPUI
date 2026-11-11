@@ -12,7 +12,19 @@ namespace UnityMcp.Editor
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message });
         internal static async Task<string> Execute(RunUiTestRequest request)
         {
-            return JsonUtility.ToJson(await RuntimeUiTestRunner.Run(request));
+            var result = await RuntimeUiTestRunner.Run(request.deadline, request.test_instance_id, request.steps);
+            return JsonUtility.ToJson(new RunUiTestReply {
+                id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                ok = result.ok,
+                error = result.error,
+                session_id = result.session_id,
+                test_instance_id = result.test_instance_id,
+                passed = result.passed,
+                failed_step_index = result.failed_step_index,
+                steps = result.steps,
+                interaction_mode = result.interaction_mode,
+                saved_scene = result.saved_scene
+            });
         }
     }
 }

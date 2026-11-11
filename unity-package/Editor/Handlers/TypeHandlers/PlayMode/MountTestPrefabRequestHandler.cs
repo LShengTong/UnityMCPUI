@@ -12,7 +12,15 @@ namespace UnityMcp.Editor
             id = id ?? "", instance_id = EditorInstanceInfo.InstanceId, error = message });
         internal static string Execute(MountTestPrefabRequest request)
         {
-            return JsonUtility.ToJson(PlayModeSession.Mount(request));
+            var result = PlayModeSession.Mount(request.prefab_path, request.parent_path, request.scene_name);
+            return JsonUtility.ToJson(new MountTestPrefabReply {
+                id = request.id, instance_id = EditorInstanceInfo.InstanceId,
+                ok = result.ok,
+                error = result.error,
+                session_id = result.session_id,
+                test_instance_id = result.test_instance_id,
+                scene_path = result.scene_path
+            });
         }
     }
 }

@@ -302,6 +302,34 @@ class CreateUiPrefabRequest(BaseModel):
     spec: UiPrefabSpec
 
 
+class PointerMoveStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    action: Literal['pointer_move']
+    x: float = Field(default=0, ge=-16384, le=16384)
+    y: float = Field(default=0, ge=-16384, le=16384)
+    frames: int = Field(default=1, ge=1, le=60, description='Interpolate movement over this many rendered frames, retaining held mouse buttons.')
+    target_path: str = Field(default='', max_length=512, description='Optional target RectTransform relative path. x/y become pixel offsets from its center. Without path x/y are Game-view pixels from bottom-left.')
+
+
+class PointerDownStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    action: Literal['pointer_down']
+    button: Literal['left', 'right', 'middle'] = Field(default='left')
+
+
+class PointerUpStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    action: Literal['pointer_up']
+    button: Literal['left', 'right', 'middle'] = Field(default='left')
+
+
+class PointerScrollStep(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    action: Literal['pointer_scroll']
+    scroll_x: float = Field(default=0, ge=-100, le=100)
+    scroll_y: float = Field(default=0, ge=-100, le=100, description='Wheel ticks at the current pointer location. Positive is up.')
+
+
 class UiOffset(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     x: float = Field(ge=-16384, le=16384)
@@ -367,7 +395,7 @@ class UiPrefabSpec(BaseModel):
 
 UiBatchOperation = Annotated[UiPropertyModification | UiNodeAddition | UiNodeDeletion | UiNodeMove | UiComponentAddition | UiNodeDuplication | UiPrefabInstantiation | UiScriptAddition | UiReferenceAssignment, Field(discriminator='action')]
 
-UiTestStep = Annotated[InvokeButtonStep | SetInputTextStep | AssertUiStep | WaitUiConditionStep | ScreenshotUiStep, Field(discriminator='action')]
+UiTestStep = Annotated[InvokeButtonStep | SetInputTextStep | AssertUiStep | WaitUiConditionStep | ScreenshotUiStep | PointerMoveStep | PointerDownStep | PointerUpStep | PointerScrollStep, Field(discriminator='action')]
 
 UiAssetSearch.model_rebuild()
 UiAssetInspection.model_rebuild()
@@ -403,6 +431,10 @@ RunUiTestRequest.model_rebuild()
 CreateTmpFontRequest.model_rebuild()
 UpdateTmpFontCharactersRequest.model_rebuild()
 CreateUiPrefabRequest.model_rebuild()
+PointerMoveStep.model_rebuild()
+PointerDownStep.model_rebuild()
+PointerUpStep.model_rebuild()
+PointerScrollStep.model_rebuild()
 UiOffset.model_rebuild()
 UiNode.model_rebuild()
 UiPrefabSpec.model_rebuild()

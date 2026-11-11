@@ -7,6 +7,18 @@ namespace UnityMcp.Editor.Tests
 {
     public sealed class UiBusinessValidationTests
     {
+        [Test]
+        public void FontInspectionChecksUtf16LengthBeforeResolvingFontAssets()
+        {
+            var query = new TmpFontAssetQuery();
+            var request = new UiAssetInspection { asset_path = "Assets/__MissingFontForValidation.asset", asset_type = "tmp_font",
+                text = string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x1F600), 513)) };
+            double deadline = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0 + 10;
+            StringAssert.Contains("1024 UTF-16", Assert.Throws<Exception>(() => query.Inspect(request, 0, deadline)).Message);
+            request.text = string.Concat(Enumerable.Repeat(char.ConvertFromUtf32(0x1F600), 512));
+            StringAssert.Contains("Asset not found", Assert.Throws<Exception>(() => query.Inspect(request, 0, deadline)).Message);
+        }
+
         static void Validate(params UiPrefabNode[] nodes)
         {
             int count = 0;

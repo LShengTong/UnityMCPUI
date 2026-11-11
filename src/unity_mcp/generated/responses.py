@@ -492,7 +492,7 @@ class UiTestStepResult(BaseModel):
     png_base64: str = Field(max_length=16777216)
     width: int
     height: int
-    interaction_mode: Literal['callback'] = Field(max_length=512)
+    interaction_mode: Literal['callback', 'pointer', 'mixed'] = Field(max_length=512)
 
 
 class EnterPlayModeReply(BaseModel):
@@ -582,7 +582,7 @@ class RunUiTestReply(BaseModel):
     passed: bool = Field(default=False)
     failed_step_index: int = Field(default=-1)
     steps: list[UiTestStepResult] = Field(default_factory=lambda: [])
-    interaction_mode: Literal['callback'] = Field(default='callback')
+    interaction_mode: Literal['callback', 'pointer', 'mixed'] = Field(default='callback')
     saved_scene: Literal[False] = Field(default=False)
 
     @model_validator(mode="after")

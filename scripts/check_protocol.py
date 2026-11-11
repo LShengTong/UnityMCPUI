@@ -25,6 +25,132 @@ from unity_mcp.generated.routes import Endpoints, HTTP_METHODS
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_pointer_steps_round_trip_and_reject_invalid_input(self):
+        from unity_mcp.generated.requests import RunUiTestRequest
+        envelope = {"id": "a" * 32, "deadline": 12345, "test_instance_id": "test"}
+        steps = [
+            {"action": "pointer_move", "target_path": "Panel/Button", "frames": 6},
+            {"action": "pointer_down"},
+            {"action": "pointer_move", "x": 300, "y": 200},
+            {"action": "pointer_up"},
+            {"action": "pointer_scroll", "scroll_y": -2},
+        ]
+        wire = RunUiTestRequest.model_validate({**envelope, "steps": steps}).model_dump()
+        self.assertEqual(wire["steps"][2]["target_path"], "")
+        self.assertEqual(wire["steps"][1]["button"], "left")
+        self.assertEqual(wire["steps"][0]["frames"], 6)
+        for invalid in [
+            {"action": "pointer_move", "frames": 0},
+            {"action": "pointer_move", "frames": 61},
+            {"action": "pointer_down", "button": "unknown"},
+            {"action": "pointer_scroll", "scroll_y": 101},
+        ]:
+            with self.subTest(step=invalid), self.assertRaises(ValidationError):
+                RunUiTestRequest.model_validate({**envelope, "steps": [invalid]})
+
+    def test_shared_image_utils_validate_png_and_local_import(self):
+        from unity_mcp.image_utils import decode_base64, decode_png, encode_base64, read_image
+        encoded = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII="
+        png = decode_png(encoded, 1, 1)
+        self.assertEqual(encode_base64(png), encoded)
+        with self.assertRaisesRegex(ValueError, "dimensions"):
+            decode_png(encoded, 2, 1)
+        with self.assertRaisesRegex(ValueError, "end marker"):
+            decode_png(encode_base64(png[:-12]), 1, 1)
+        with self.assertRaisesRegex(ValueError, "Base64"):
+            decode_png("invalid!", 1, 1)
+        with self.assertRaisesRegex(ValueError, "size"):
+            decode_base64("AAAA", max_bytes=1)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "image.png"
+            path.write_bytes(png)
+            data, kind, width, height = read_image(str(path.resolve()))
+            self.assertEqual((data, kind, width, height), (png, "png", 1, 1))
+
+    def test_image_import_adapter_reads_and_sends_local_image(self):
+        from unity_mcp.image_utils import decode_base64
+        from unity_mcp.server import create_server
+        from types import SimpleNamespace
+        async def run():
+            encoded = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII="
+            with tempfile.TemporaryDirectory() as directory:
+                source = Path(directory) / "source.png"
+                source.write_bytes(decode_base64(encoded))
+                def respond(request):
+                    self.assertEqual(request.url.path, Endpoints.IMPORT_UI_IMAGE)
+                    body = json.loads(request.content)
+                    self.assertEqual(body["image_base64"], encoded)
+                    self.assertEqual(body["border"], [0, 0, 0, 0])
+                    result = self.response_samples()[Endpoints.IMPORT_UI_IMAGE]
+                    result.update(id=body["id"], width=1, height=1)
+                    return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json=result)
+                async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
+                    connection = EditorConnection(Path(directory), "test", client)
+                    tool = create_server()._tool_manager.get_tool("import_ui_image").fn
+                    ctx = SimpleNamespace(request_context=SimpleNamespace(lifespan_context={"editor": connection}))
+                    result = await tool(str(source.resolve()), "Assets/Image.png", ctx)
+                    self.assertTrue(result["ok"])
+        asyncio.run(run())
+
+    def test_multiple_screenshot_rule_is_deferred_to_unity(self):
+        async def run():
+            def respond(request):
+                body = json.loads(request.content)
+                self.assertEqual(len(body["steps"]), 2)
+                return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json={
+                    "id": body["id"], "instance_id": "test", "ok": False,
+                    "error": "At most one screenshot per test"})
+            async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
+                connection = EditorConnection(Path.cwd(), "test", client)
+                result = await connection.run_ui_test("owned", [{"action": "screenshot"}, {"action": "screenshot"}])
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["error"], "At most one screenshot per test")
+        asyncio.run(run())
+
+    def test_common_request_handles_gets_and_rejects_bodies(self):
+        async def run():
+            samples = self.response_samples()
+            def respond(request):
+                self.assertEqual(request.method, "GET")
+                self.assertEqual(request.content, b"")
+                return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json=samples[request.url.path])
+            async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
+                connection = EditorConnection(Path.cwd(), "test", client)
+                for endpoint, method in HTTP_METHODS.items():
+                    if method == "GET":
+                        self.assertEqual(await connection.request(endpoint), samples[endpoint])
+                with self.assertRaisesRegex(ValueError, "GET endpoints"):
+                    await connection.request(Endpoints.PLAY_STATUS, {"unexpected": True})
+        asyncio.run(run())
+
+    def test_common_create_request_preserves_presence_timeout_and_target_identity(self):
+        async def run():
+            def respond(request):
+                body = json.loads(request.content)
+                self.assertEqual(request.extensions["timeout"]["read"], 9)
+                nodes = body["spec"]["children"]
+                self.assertFalse(nodes[0]["has_width"])
+                self.assertTrue(nodes[1]["has_width"])
+                self.assertEqual(nodes[1]["width"], 320)
+                return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json={
+                    "id": body["id"], "instance_id": "test", "ok": True,
+                    "asset_path": "Assets/Wrong.prefab", "node_count": 2})
+            async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
+                connection = EditorConnection(Path.cwd(), "test", client)
+                with self.assertRaisesRegex(RuntimeError, "target asset mismatch"):
+                    await connection.request(Endpoints.CREATE_UI_PREFAB, {'output_path': 'Assets/Test.prefab', 'spec': {'name': 'Root', 'children': [{'name': 'Inherited', 'kind': 'prefab', 'prefab_path': 'Assets/Button.prefab'}, {'name': 'Override', 'kind': 'prefab', 'prefab_path': 'Assets/Button.prefab', 'width': 320}]}}, timeout=7)
+        asyncio.run(run())
+
+    def test_common_request_rejects_oversized_body_before_sending(self):
+        async def run():
+            def respond(request):
+                self.fail("Oversized request was sent")
+            async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
+                connection = EditorConnection(Path.cwd(), "test", client)
+                with self.assertRaisesRegex(ValueError, "size limit"):
+                    await connection.request(Endpoints.CREATE_UI_PREFAB, {'output_path': 'Assets/Test.prefab', 'spec': {'name': 'Root', 'children': [{'name': 'Label' + str(i), 'kind': 'text', 'text': 'a' * 4096} for i in range(80)]}})
+        asyncio.run(run())
+
     def test_bridge_discovery_errors_identify_target_and_failure(self):
         async def run():
             with tempfile.TemporaryDirectory() as directory:
@@ -125,7 +251,7 @@ class ProtocolTests(unittest.TestCase):
             async with httpx.AsyncClient(base_url='http://127.0.0.1', transport=httpx.MockTransport(respond)) as client:
                 connection = EditorConnection(Path.cwd(), 'test', client)
                 with patch.dict(HTTP_METHODS, {Endpoints.FIND_UI_ASSETS: 'PUT'}):
-                    await connection._request_ui_query(Endpoints.FIND_UI_ASSETS, self.request_samples()[Endpoints.FIND_UI_ASSETS])
+                    await connection.request(Endpoints.FIND_UI_ASSETS, self.request_samples()[Endpoints.FIND_UI_ASSETS])
         asyncio.run(run())
 
     def test_numeric_array_bounds_are_emitted_for_both_languages(self):
@@ -305,7 +431,7 @@ class ProtocolTests(unittest.TestCase):
                 async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                     connection = EditorConnection(Path.cwd(), "test", client)
                     if mode == "failure":
-                        result = await connection._request_ui_query(Endpoints.BATCH_EDIT_UI_PREFAB, self.request_samples()[Endpoints.BATCH_EDIT_UI_PREFAB])
+                        result = await connection.request(Endpoints.BATCH_EDIT_UI_PREFAB, self.request_samples()[Endpoints.BATCH_EDIT_UI_PREFAB])
                         self.assertFalse(result["ok"])
                         self.assertTrue(result["saved"])
                         self.assertEqual(result["backup_id"], "c" * 32)
@@ -313,7 +439,7 @@ class ProtocolTests(unittest.TestCase):
                         continue
                     expected = {"missing": "Invalid Unity response", "identity": "identity mismatch"}
                     with self.assertRaisesRegex(RuntimeError, expected[mode]):
-                        await connection._request_ui_query(Endpoints.BATCH_EDIT_UI_PREFAB, self.request_samples()[Endpoints.BATCH_EDIT_UI_PREFAB])
+                        await connection.request(Endpoints.BATCH_EDIT_UI_PREFAB, self.request_samples()[Endpoints.BATCH_EDIT_UI_PREFAB])
         asyncio.run(run())
 
     def test_http_errors_remain_transport_failures(self):
@@ -323,8 +449,8 @@ class ProtocolTests(unittest.TestCase):
                     return httpx.Response(status, headers={"X-Unity-Instance": "test"}, json={"error": "transport error"})
                 async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                     connection = EditorConnection(Path.cwd(), "test", client)
-                    with self.assertRaisesRegex(RuntimeError, "Unity UI query failed"):
-                        await connection._request_ui_query(Endpoints.FIND_UI_ASSETS, self.request_samples()[Endpoints.FIND_UI_ASSETS])
+                    with self.assertRaisesRegex(RuntimeError, "Unity request failed"):
+                        await connection.request(Endpoints.FIND_UI_ASSETS, self.request_samples()[Endpoints.FIND_UI_ASSETS])
         asyncio.run(run())
     @staticmethod
     def request_samples():
@@ -417,9 +543,8 @@ class ProtocolTests(unittest.TestCase):
             async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                 connection = EditorConnection(Path.cwd(), "test", client)
                 for endpoint, payload in self.request_samples().items():
-                    if endpoint != Endpoints.CREATE_UI_PREFAB:
-                        await connection._request_ui_query(endpoint, payload)
-            self.assertEqual(len(seen), len(REQUEST_MODELS) - 1)
+                    await connection.request(endpoint, payload)
+            self.assertEqual(len(seen), len(REQUEST_MODELS))
         asyncio.run(run())
 
     def test_all_endpoint_business_failures_preserve_response(self):
@@ -432,11 +557,15 @@ class ProtocolTests(unittest.TestCase):
                 async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                     connection = EditorConnection(Path.cwd(), "test", client)
                     if endpoint == Endpoints.CREATE_UI_PREFAB:
-                        result = await connection.create_prefab("Assets/__ProtocolFailureTest.prefab", payload["spec"])
+                        result = await connection.request(Endpoints.CREATE_UI_PREFAB, {'output_path': 'Assets/__ProtocolFailureTest.prefab', 'spec': payload['spec']})
                     elif endpoint == Endpoints.PREVIEW_UI_PREFAB:
-                        result = await connection.preview_ui_prefab(payload["asset_path"])
+                        from unity_mcp.server import create_server
+                        from types import SimpleNamespace
+                        tool = create_server()._tool_manager.get_tool("preview_ui_prefab").fn
+                        ctx = SimpleNamespace(request_context=SimpleNamespace(lifespan_context={"editor": connection}))
+                        result = await tool(payload["asset_path"], ctx)
                     else:
-                        result = await connection._request_ui_query(endpoint, payload)
+                        result = await connection.request(endpoint, payload)
                     self.assertEqual(result, failure)
         asyncio.run(run())
 
@@ -478,12 +607,9 @@ class ProtocolTests(unittest.TestCase):
                 return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json=result)
             async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                 connection = EditorConnection(Path.cwd(), "test", client)
-                self.assertFalse((await connection.compilation_status())["is_compiling"])
-                self.assertTrue((await connection.refresh_assets())["refresh_requested"])
-                result = await connection.batch_edit_ui_prefab("Assets/Test.prefab", "a" * 64, [
-                    {"action": "add_script", "index_path": "0", "script_path": "Assets/DialogView.cs"},
-                    {"action": "set_reference", "index_path": "0", "component_type": "DialogView",
-                        "field_path": "button", "target_path": "0/0", "target_component": "UnityEngine.UI.Button"}])
+                self.assertFalse((await connection.request(Endpoints.COMPILATION_STATUS))["is_compiling"])
+                self.assertTrue((await connection.request(Endpoints.REFRESH_ASSETS, {}))["refresh_requested"])
+                result = await connection.request(Endpoints.BATCH_EDIT_UI_PREFAB, {'asset_path': 'Assets/Test.prefab', 'expected_version': 'a' * 64, 'operations': [{'action': 'add_script', 'index_path': '0', 'script_path': 'Assets/DialogView.cs'}, {'action': 'set_reference', 'index_path': '0', 'component_type': 'DialogView', 'field_path': 'button', 'target_path': '0/0', 'target_component': 'UnityEngine.UI.Button'}]})
                 self.assertTrue(result["ok"])
         asyncio.run(run())
 
@@ -529,6 +655,10 @@ class ProtocolTests(unittest.TestCase):
                 body = json.loads(request.content)
                 step = body["steps"][0]
                 seen.append((step["width"], step["height"]))
+                if (step["width"] == 0) != (step["height"] == 0):
+                    return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json={
+                        "id": body["id"], "instance_id": "test", "ok": False,
+                        "error": "Screenshot width and height must both be supplied"})
                 return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json={
                     "id": body["id"], "instance_id": "test", "ok": True, "session_id": "play",
                     "test_instance_id": "owned", "passed": True, "failed_step_index": -1, "saved_scene": False,
@@ -538,14 +668,15 @@ class ProtocolTests(unittest.TestCase):
             async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                 connection = EditorConnection(Path.cwd(), "test", client)
                 for step in ({"action": "screenshot", "width": 640}, {"action": "screenshot", "height": 480}):
-                    with self.assertRaisesRegex(ValueError, "together"):
-                        await connection.run_ui_test("owned", [step])
-                self.assertEqual(seen, [])
+                    result = await connection.run_ui_test("owned", [step])
+                    self.assertFalse(result["ok"])
+                    self.assertIn("width and height", result["error"])
+                self.assertEqual(seen, [(640, 0), (0, 480)])
                 result = await connection.run_ui_test("owned", [{"action": "screenshot", "width": 1, "height": 1}])
                 self.assertTrue(result["passed"])
                 with self.assertRaisesRegex(RuntimeError, "requested resolution"):
                     await connection.run_ui_test("owned", [{"action": "screenshot", "width": 640, "height": 480}])
-                self.assertEqual(seen, [(1, 1), (640, 480)])
+                self.assertEqual(seen, [(640, 0), (0, 480), (1, 1), (640, 480)])
         asyncio.run(run())
 
     def test_isolated_play_defaults_and_optional_mount_parent(self):
@@ -575,8 +706,7 @@ class ProtocolTests(unittest.TestCase):
                 async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                     connection = EditorConnection(Path.cwd(), "test", client)
                     payload = self.request_samples()[Endpoints.BATCH_EDIT_UI_PREFAB]
-                    result = await connection.batch_edit_ui_prefab(
-                        payload["asset_path"], payload["expected_version"], payload["operations"])
+                    result = await connection.request(Endpoints.BATCH_EDIT_UI_PREFAB, {'asset_path': payload['asset_path'], 'expected_version': payload['expected_version'], 'operations': payload['operations']})
                     self.assertEqual(result, failure)
         asyncio.run(run())
 
@@ -601,23 +731,34 @@ class ProtocolTests(unittest.TestCase):
             async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                 connection = EditorConnection(Path.cwd(), "test", client)
                 node = {"name": "Existing", "kind": "prefab", "prefab_path": "Assets/Button.prefab", "x": 0}
-                await connection.create_prefab("Assets/__ReuseTest.prefab", {"name": "Canvas", "children": [node]})
-                await connection.batch_edit_ui_prefab("Assets/Test.prefab", "a" * 64, [
-                    {"action": "duplicate", "index_path": "0/0", "parent_path": "0"},
-                    {"action": "instantiate_prefab", "prefab_path": "Assets/Button.prefab", "parent_path": "0"},
-                    {"action": "add", "parent_path": "0", "node": node},
-                ])
+                await connection.request(Endpoints.CREATE_UI_PREFAB, {'output_path': 'Assets/__ReuseTest.prefab', 'spec': {'name': 'Canvas', 'children': [node]}})
+                await connection.request(Endpoints.BATCH_EDIT_UI_PREFAB, {'asset_path': 'Assets/Test.prefab', 'expected_version': 'a' * 64, 'operations': [{'action': 'duplicate', 'index_path': '0/0', 'parent_path': '0'}, {'action': 'instantiate_prefab', 'prefab_path': 'Assets/Button.prefab', 'parent_path': '0'}, {'action': 'add', 'parent_path': '0', 'node': node}]})
         asyncio.run(run())
         UiPrefabSpec(name="Canvas", children=[{"name": "Invalid", "kind": "prefab"}])
         UiPrefabSpec(name="Canvas", children=[{"name": "Invalid", "kind": "prefab",
             "prefab_path": "Assets/Button.prefab", "children": [{"name": "Child"}]}])
 
-    def test_asset_and_batch_business_validation(self):
-        from unity_mcp.asset_schema import UiAssetInspection
-        from unity_mcp.generated.requests import UiComponentAddition
-        with self.assertRaises(ValidationError):
-            UiAssetInspection(asset_path="Assets/Test.prefab", asset_type="ui_prefab", text="\U0001f600" * 513)
+    def test_asset_and_batch_business_validation_is_deferred(self):
+        from unity_mcp.generated.requests import UiAssetInspection, UiComponentAddition
+        UiAssetInspection(asset_path="Assets/Test.asset", asset_type="tmp_font", text="\U0001f600" * 513)
         UiComponentAddition(action="add_component", index_path="0", component="ScrollRect")
+
+    def test_font_utf16_error_is_returned_by_unity(self):
+        async def run():
+            text = "\U0001f600" * 513
+            def respond(request):
+                body = json.loads(request.content)
+                self.assertEqual(body["assets"][0]["text"], text)
+                return httpx.Response(200, headers={"X-Unity-Instance": "test"}, json={
+                    "id": body["id"], "instance_id": "test", "ok": True,
+                    "results": [{"index": 0, "asset_type": "tmp_font", "ok": False,
+                        "error": "Text exceeds 1024 UTF-16 code units"}]})
+            async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
+                connection = EditorConnection(Path.cwd(), "test", client)
+                result = await connection.request(Endpoints.INSPECT_UI_ASSETS, {'assets': [{'asset_path': 'Assets/Test.asset', 'asset_type': 'tmp_font', 'text': text}]})
+                self.assertFalse(result["results"][0]["ok"])
+                self.assertEqual(result["results"][0]["error"], "Text exceeds 1024 UTF-16 code units")
+        asyncio.run(run())
     def test_generated_files_are_current(self):
         spec = importlib.util.spec_from_file_location("generator", ROOT / "scripts/generate_protocol.py")
         generator = importlib.util.module_from_spec(spec)
@@ -704,7 +845,7 @@ class ProtocolTests(unittest.TestCase):
                         "id": body["id"], "instance_id": "test", "ok": False, "error": "Text nodes require nonempty text"})
                 async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                     connection = EditorConnection(project, "test", client)
-                    result = await connection.create_prefab("Assets/Test.prefab", {"name": "Panel", "children": [{"name": "Label", "kind": "text"}]})
+                    result = await connection.request(Endpoints.CREATE_UI_PREFAB, {'output_path': 'Assets/Test.prefab', 'spec': {'name': 'Panel', 'children': [{'name': 'Label', 'kind': 'text'}]}})
                     self.assertFalse(result["ok"])
                     self.assertEqual(result["error"], "Text nodes require nonempty text")
         asyncio.run(run())
@@ -730,7 +871,7 @@ class ProtocolTests(unittest.TestCase):
 
                 async with httpx.AsyncClient(base_url="http://127.0.0.1", transport=httpx.MockTransport(respond)) as client:
                     connection = EditorConnection(project, "test", client)
-                    await connection.create_prefab("Assets/Test.prefab", {"name": "Canvas", "children": [{"name": "Panel"}]})
+                    await connection.request(Endpoints.CREATE_UI_PREFAB, {'output_path': 'Assets/Test.prefab', 'spec': {'name': 'Canvas', 'children': [{'name': 'Panel'}]}})
                 self.assertEqual(len(seen), 1)
                 self.assertEqual(len(seen[0]["id"]), 32)
         asyncio.run(run())

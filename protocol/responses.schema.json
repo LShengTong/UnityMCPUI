@@ -2460,7 +2460,9 @@
           "maxLength": 512,
           "default": "",
           "enum": [
-            "callback"
+            "callback",
+            "pointer",
+            "mixed"
           ]
         }
       },
@@ -2964,7 +2966,9 @@
           "type": "string",
           "default": "callback",
           "enum": [
-            "callback"
+            "callback",
+            "pointer",
+            "mixed"
           ]
         },
         "saved_scene": {
