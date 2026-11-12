@@ -17,6 +17,8 @@ namespace UnityMcp.Editor
                 (EditorRequestType.FindUiAssets, new FindUiAssetsRequestHandler(tasks)),
                 (EditorRequestType.InspectUiAssets, new InspectUiAssetsRequestHandler(tasks)),
                 (EditorRequestType.CreateUiPrefab, new CreateUiPrefabRequestHandler(tasks)),
+                (EditorRequestType.CreateUiTestScene, new CreateUiTestSceneRequestHandler(tasks)),
+                (EditorRequestType.GameViewResolution, new GameViewResolutionRequestHandler()),
                 (EditorRequestType.BatchEditUiPrefab, new BatchEditUiPrefabRequestHandler(tasks)),
                 (EditorRequestType.PreviewUiPrefab, new PreviewUiPrefabRequestHandler(tasks)),
                 (EditorRequestType.ImportUiImage, new ImportUiImageRequestHandler(tasks)),

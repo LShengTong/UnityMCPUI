@@ -19,7 +19,7 @@ namespace UnityMcp.Editor
         }
         const string Key = "UnityMcp.IsolatedPlayScene";
         const string Prefix = "Assets/__UnityMcpPlayScene_";
-        const string Parent = "UnityMcpTestCanvas/Content";
+        const string Parent = UiTestSceneUtility.ParentPath;
         static Recovery state;
         static bool recoverOnUpdate;
         internal static bool Active => state != null;
@@ -84,25 +84,7 @@ namespace UnityMcp.Editor
                 if (string.IsNullOrEmpty(state.folderGuid)) throw new Exception("Cannot create temporary test scene folder");
                 Persist();
                 temporary = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
-                var canvas = new GameObject("UnityMcpTestCanvas", typeof(RectTransform));
-                SceneManager.MoveGameObjectToScene(canvas, temporary);
-                canvas.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-                var scaler = canvas.AddComponent<UnityEngine.UI.CanvasScaler>();
-                scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(width, height); scaler.matchWidthOrHeight = .5f;
-                canvas.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-                var content = new GameObject("Content", typeof(RectTransform));
-                content.transform.SetParent(canvas.transform, false);
-                var rect = (RectTransform)content.transform;
-                rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.sizeDelta = Vector2.zero;
-                var events = new GameObject("UnityMcpTestEventSystem", typeof(UnityEngine.EventSystems.EventSystem));
-                SceneManager.MoveGameObjectToScene(events, temporary);
-                // Input module is added on EnteredPlayMode, so transient default input actions are not serialized.
-                var cameraObject = new GameObject("UnityMcpTestCamera", typeof(Camera));
-                SceneManager.MoveGameObjectToScene(cameraObject, temporary);
-                var camera = cameraObject.GetComponent<Camera>();
-                camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.12f, .12f, .12f);
-                camera.cullingMask = 0;
+                UiTestSceneUtility.Build(temporary, width, height, false);
                 if (!EditorSceneManager.SaveScene(temporary, state.scene)) throw new Exception("Cannot save temporary test scene");
                 EditorSceneManager.CloseScene(temporary, true); temporary = default;
                 if (active.IsValid() && active.isLoaded) SceneManager.SetActiveScene(active);
@@ -129,13 +111,7 @@ namespace UnityMcp.Editor
         {
             var scene = TestScene();
             var events = scene.GetRootGameObjects().Single(go => go.name == "UnityMcpTestEventSystem");
-#if ENABLE_INPUT_SYSTEM
-            var module = Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem")
-                ?? throw new Exception("Input System is enabled but its UI input module is unavailable");
-            events.AddComponent(module); // OnEnable assigns default input actions using the package's public API.
-#else
-            events.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-#endif
+            UiTestSceneUtility.AddInputModule(events);
         }
         internal static Transform MountParent()
         {

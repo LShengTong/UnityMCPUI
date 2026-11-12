@@ -409,6 +409,31 @@ namespace UnityMcp.Editor
         public float scroll_y = 0f;
     }
 
+    [Serializable] internal sealed class CreateUiTestSceneRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string scene_path;
+        public string prefab_path = "";
+        public float reference_width = 1920f;
+        public float reference_height = 1080f;
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
+    [Serializable] internal sealed class GameViewResolutionRequest : IEditorRequest
+    {
+        public string id;
+        public double deadline;
+        public string action;
+        public int width = 0;
+        public int height = 0;
+        public int preset_index = -1;
+        public string preset_group = "";
+        string IEditorRequest.Id => id;
+        double IEditorRequest.Deadline => deadline;
+    }
+
     [Serializable] public sealed class UiOffset
     {
         public float x = float.NaN;
@@ -913,6 +938,29 @@ namespace UnityMcp.Editor
             if (value.action == null || (value.action != "pointer_scroll")) throw new Exception("Invalid PointerScrollStep.action");
             if (float.IsNaN(value.scroll_x) || float.IsInfinity(value.scroll_x) || value.scroll_x < -100 || value.scroll_x > 100) throw new Exception("Invalid PointerScrollStep.scroll_x");
             if (float.IsNaN(value.scroll_y) || float.IsInfinity(value.scroll_y) || value.scroll_y < -100 || value.scroll_y > 100) throw new Exception("Invalid PointerScrollStep.scroll_y");
+        }
+
+        public static void Validate(CreateUiTestSceneRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing CreateUiTestSceneRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid CreateUiTestSceneRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid CreateUiTestSceneRequest.deadline");
+            if (value.scene_path == null || (value.scene_path != null && value.scene_path.Length < 1)) throw new Exception("Invalid CreateUiTestSceneRequest.scene_path");
+            if (float.IsNaN(value.reference_width) || float.IsInfinity(value.reference_width) || value.reference_width < 1 || value.reference_width > 16384) throw new Exception("Invalid CreateUiTestSceneRequest.reference_width");
+            if (float.IsNaN(value.reference_height) || float.IsInfinity(value.reference_height) || value.reference_height < 1 || value.reference_height > 16384) throw new Exception("Invalid CreateUiTestSceneRequest.reference_height");
+        }
+
+        public static void Validate(GameViewResolutionRequest value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing GameViewResolutionRequest");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null || (value.id != null && !Regex.IsMatch(value.id, "^[0-9a-fA-F]{32}$"))) throw new Exception("Invalid GameViewResolutionRequest.id");
+            if (double.IsNaN(value.deadline) || double.IsInfinity(value.deadline)) throw new Exception("Invalid GameViewResolutionRequest.deadline");
+            if (value.action == null || (value.action != "query" && value.action != "set" && value.action != "restore")) throw new Exception("Invalid GameViewResolutionRequest.action");
+            if (value.width < 0 || value.width > 2048) throw new Exception("Invalid GameViewResolutionRequest.width");
+            if (value.height < 0 || value.height > 2048) throw new Exception("Invalid GameViewResolutionRequest.height");
+            if (value.preset_index < -1) throw new Exception("Invalid GameViewResolutionRequest.preset_index");
         }
 
         public static void Validate(UiOffset value, int depth = 0)

@@ -1152,14 +1152,14 @@
           "default": 0,
           "minimum": 0,
           "maximum": 2048,
-          "description": "Set width and height together (1..2048); both 0 preserves the current Game view size."
+          "description": "Set width and height together (10..2048 fixed preset pixels); both 0 preserves current Game view size."
         },
         "height": {
           "type": "integer",
           "default": 0,
           "minimum": 0,
           "maximum": 2048,
-          "description": "Set width and height together (1..2048); both 0 preserves the current Game view size."
+          "description": "Set width and height together (10..2048 fixed preset pixels); both 0 preserves current Game view size."
         }
       },
       "required": [
@@ -1470,6 +1470,93 @@
       "required": [
         "action"
       ]
+    },
+    "CreateUiTestSceneRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "scene_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prefab_path": {
+          "type": "string",
+          "default": ""
+        },
+        "reference_width": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 16384,
+          "default": 1920
+        },
+        "reference_height": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 16384,
+          "default": 1080
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "scene_path"
+      ],
+      "x-request": true
+    },
+    "GameViewResolutionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "deadline": {
+          "type": "number"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "query",
+            "set",
+            "restore"
+          ]
+        },
+        "width": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 2048
+        },
+        "height": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 2048
+        },
+        "preset_index": {
+          "type": "integer",
+          "default": -1,
+          "minimum": -1
+        },
+        "preset_group": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "required": [
+        "id",
+        "deadline",
+        "action"
+      ],
+      "x-request": true
     }
   }
 }

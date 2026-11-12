@@ -483,6 +483,43 @@ namespace UnityMcp.Editor
         public string[] missing_codepoints = new string[] {  };
     }
 
+    [Serializable] public sealed class CreateUiTestSceneReply
+    {
+        public string id;
+        public string instance_id;
+        public bool ok;
+        public string error;
+        public string scene_path;
+        public string parent_path = "";
+        public string prefab_instance_path = "";
+        public bool saved = false;
+    }
+
+    [Serializable] public sealed class GameViewPreset
+    {
+        public int index;
+        public string name;
+        public string size_type;
+        public int width;
+        public int height;
+        public bool is_custom;
+    }
+
+    [Serializable] public sealed class GameViewResolutionReply
+    {
+        public string id;
+        public string instance_id;
+        public bool ok;
+        public string error;
+        public string group = "";
+        public int selected_index = -1;
+        public int actual_width = 0;
+        public int actual_height = 0;
+        public bool is_playing = false;
+        public bool can_restore = false;
+        public GameViewPreset[] presets = new GameViewPreset[] {  };
+    }
+
     internal static class ResponseProtocolValidation
     {
         public static void Validate(UnityEngine.Vector2 value, int depth = 0)
@@ -1158,6 +1195,46 @@ namespace UnityMcp.Editor
             if (value.ok == false)
             {
                 if (value.error == null || value.error == null || (value.error == null || value.error.Length < 1)) throw new Exception("Invalid UpdateTmpFontCharactersReply.error");
+            }
+        }
+
+        public static void Validate(CreateUiTestSceneReply value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing CreateUiTestSceneReply");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null) throw new Exception("Invalid CreateUiTestSceneReply.id");
+            if (value.instance_id == null || (value.instance_id != null && value.instance_id.Length < 1)) throw new Exception("Invalid CreateUiTestSceneReply.instance_id");
+            if (value.ok == true)
+            {
+                if (value.parent_path == null || value.parent_path == null || (value.parent_path == null || value.parent_path.Length < 1)) throw new Exception("Invalid CreateUiTestSceneReply.parent_path");
+                if (value.saved != true) throw new Exception("Invalid CreateUiTestSceneReply.saved");
+                if (value.scene_path == null || value.scene_path == null || (value.scene_path == null || value.scene_path.Length < 1)) throw new Exception("Invalid CreateUiTestSceneReply.scene_path");
+            }
+            if (value.ok == false)
+            {
+                if (value.error == null || value.error == null || (value.error == null || value.error.Length < 1)) throw new Exception("Invalid CreateUiTestSceneReply.error");
+            }
+        }
+
+        public static void Validate(GameViewPreset value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing GameViewPreset");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.name == null) throw new Exception("Invalid GameViewPreset.name");
+            if (value.size_type == null) throw new Exception("Invalid GameViewPreset.size_type");
+        }
+
+        public static void Validate(GameViewResolutionReply value, int depth = 0)
+        {
+            if (value == null) throw new Exception("Missing GameViewResolutionReply");
+            if (depth > 16) throw new Exception("Protocol nesting exceeds limit");
+            if (value.id == null) throw new Exception("Invalid GameViewResolutionReply.id");
+            if (value.instance_id == null || (value.instance_id != null && value.instance_id.Length < 1)) throw new Exception("Invalid GameViewResolutionReply.instance_id");
+            if (value.presets != null)
+                foreach (var item in value.presets) Validate(item, depth + 1);
+            if (value.ok == false)
+            {
+                if (value.error == null || value.error == null || (value.error == null || value.error.Length < 1)) throw new Exception("Invalid GameViewResolutionReply.error");
             }
         }
 

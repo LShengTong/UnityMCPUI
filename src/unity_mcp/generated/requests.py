@@ -260,8 +260,8 @@ class WaitUiConditionStep(BaseModel):
 class ScreenshotUiStep(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     action: Literal['screenshot']
-    width: int = Field(default=0, ge=0, le=2048, description='Set width and height together (1..2048); both 0 preserves the current Game view size.')
-    height: int = Field(default=0, ge=0, le=2048, description='Set width and height together (1..2048); both 0 preserves the current Game view size.')
+    width: int = Field(default=0, ge=0, le=2048, description='Set width and height together (10..2048 fixed preset pixels); both 0 preserves current Game view size.')
+    height: int = Field(default=0, ge=0, le=2048, description='Set width and height together (10..2048 fixed preset pixels); both 0 preserves current Game view size.')
 
 
 class RunUiTestRequest(BaseModel):
@@ -328,6 +328,27 @@ class PointerScrollStep(BaseModel):
     action: Literal['pointer_scroll']
     scroll_x: float = Field(default=0, ge=-100, le=100)
     scroll_y: float = Field(default=0, ge=-100, le=100, description='Wheel ticks at the current pointer location. Positive is up.')
+
+
+class CreateUiTestSceneRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    id: str = Field(pattern='^[0-9a-fA-F]{32}$')
+    deadline: float
+    scene_path: str = Field(min_length=1)
+    prefab_path: str = Field(default='')
+    reference_width: float = Field(default=1920, ge=1, le=16384)
+    reference_height: float = Field(default=1080, ge=1, le=16384)
+
+
+class GameViewResolutionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    id: str = Field(pattern='^[0-9a-fA-F]{32}$')
+    deadline: float
+    action: Literal['query', 'set', 'restore']
+    width: int = Field(default=0, ge=0, le=2048)
+    height: int = Field(default=0, ge=0, le=2048)
+    preset_index: int = Field(default=-1, ge=-1)
+    preset_group: str = Field(default='')
 
 
 class UiOffset(BaseModel):
@@ -435,6 +456,8 @@ PointerMoveStep.model_rebuild()
 PointerDownStep.model_rebuild()
 PointerUpStep.model_rebuild()
 PointerScrollStep.model_rebuild()
+CreateUiTestSceneRequest.model_rebuild()
+GameViewResolutionRequest.model_rebuild()
 UiOffset.model_rebuild()
 UiNode.model_rebuild()
 UiPrefabSpec.model_rebuild()
@@ -457,6 +480,8 @@ REQUEST_MODELS = {
     Endpoints.CLEAR_TEST_INSTANCES: ClearTestInstancesRequest,
     Endpoints.CREATE_TMP_FONT: CreateTmpFontRequest,
     Endpoints.UPDATE_TMP_FONT_CHARACTERS: UpdateTmpFontCharactersRequest,
+    Endpoints.CREATE_UI_TEST_SCENE: CreateUiTestSceneRequest,
+    Endpoints.GAME_VIEW_RESOLUTION: GameViewResolutionRequest,
 }
 
 

@@ -146,6 +146,20 @@
       "path": "/ui/fonts/characters",
       "request": "UpdateTmpFontCharactersRequest",
       "response": "UpdateTmpFontCharactersReply"
+    },
+    {
+      "name": "CreateUiTestScene",
+      "method": "POST",
+      "path": "/ui/test-scenes",
+      "request": "CreateUiTestSceneRequest",
+      "response": "CreateUiTestSceneReply"
+    },
+    {
+      "name": "GameViewResolution",
+      "method": "POST",
+      "path": "/editor/game-view/resolution",
+      "request": "GameViewResolutionRequest",
+      "response": "GameViewResolutionReply"
     }
   ]
 }

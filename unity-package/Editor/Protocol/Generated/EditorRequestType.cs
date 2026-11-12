@@ -24,5 +24,7 @@ namespace UnityMcp.Editor
         ClearTestInstances,
         CreateTmpFont,
         UpdateTmpFontCharacters,
+        CreateUiTestScene,
+        GameViewResolution,
     }
 }

@@ -21,9 +21,11 @@ def fixture_editor(project: Path, transient_status_failure: bool = False):
     descriptor = {"protocol": 2, "project_path": str(project.resolve()),
                   "instance_id": uuid.uuid4().hex, "token": uuid.uuid4().hex}
     failed_status_paths = set()
+    game_view_changed = False
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
+            nonlocal game_view_changed
             if self.headers.get("Authorization") != "Bearer " + descriptor["token"]:
                 self.send_error(401)
                 return
@@ -36,6 +38,22 @@ def fixture_editor(project: Path, transient_status_failure: bool = False):
             if self.path == Endpoints.REFRESH_ASSETS:
                 body = json.dumps({"id": request["id"], "instance_id": descriptor["instance_id"],
                     "ok": True, "refresh_requested": True, "refresh_id": "fixture-refresh"}).encode()
+            if self.path == Endpoints.CREATE_UI_TEST_SCENE:
+                assert request["reference_width"] == 800 and request["reference_height"] == 600
+                assert request["prefab_path"] == "Assets/Panel.prefab"
+                body = json.dumps({"id": request["id"], "instance_id": descriptor["instance_id"],
+                    "ok": True, "scene_path": request["scene_path"], "saved": True,
+                    "parent_path": "UnityMcpTestCanvas/Content",
+                    "prefab_instance_path": "UnityMcpTestCanvas/Content/Panel"}).encode()
+            if self.path == Endpoints.GAME_VIEW_RESOLUTION:
+                if request["action"] == "set":
+                    assert request["width"] == 720 and request["height"] == 1280
+                    game_view_changed = True
+                if request["action"] == "restore": game_view_changed = False
+                body = json.dumps({"id": request["id"], "instance_id": descriptor["instance_id"],
+                    "ok": True, "group": "Standalone", "selected_index": 1 if game_view_changed else 0,
+                    "actual_width": 720 if game_view_changed else 640, "actual_height": 1280 if game_view_changed else 480,
+                    "is_playing": False, "can_restore": game_view_changed, "presets": []}).encode()
             if self.path == Endpoints.RUN_UI_TEST:
                 # Tiny valid PNG; verifies MCP image conversion, not native rendering.
                 png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1kAAAAASUVORK5CYII="
@@ -122,7 +140,7 @@ async def check(project: Path, mock_failures: bool = False):
         async with ClientSession(read, write) as session:
             await session.initialize()
             tools = await session.list_tools()
-            assert {"connect_project", "unity_project_info", "create_ui_prefab"} <= {tool.name for tool in tools.tools}
+            assert {"connect_project", "unity_project_info", "create_ui_prefab", "create_ui_test_scene"} <= {tool.name for tool in tools.tools}
             assert (await session.call_tool("unity_project_info", {})).isError
             connected = await session.call_tool("connect_project", {"project_path": str(project)})
             assert not connected.isError, connected
@@ -155,6 +173,21 @@ async def check(project: Path, mock_failures: bool = False):
             assert isinstance(data["unity_version"], str) and data["unity_version"]
             assert "dependencies" not in data
             if mock_failures:
+                for name, arguments, expected in [
+                    ("get_game_view_resolution", {}, (640, False)),
+                    ("set_game_view_resolution", {"width": 720, "height": 1280}, (720, True)),
+                    ("restore_game_view_resolution", {}, (640, False)),
+                ]:
+                    view = await session.call_tool(name, arguments)
+                    assert not view.isError, view
+                    data = json.loads(view.content[0].text)
+                    assert (data["actual_width"], data["can_restore"]) == expected
+                scene = await session.call_tool("create_ui_test_scene", {"scene_path": "Assets/UiTest.unity",
+                    "prefab_path": "Assets/Panel.prefab", "reference_width": 800, "reference_height": 600})
+                assert not scene.isError, scene
+                scene_data = json.loads(scene.content[0].text)
+                assert scene_data["ok"] and scene_data["saved"]
+                assert scene_data["scene_path"] == "Assets/UiTest.unity"
                 play = await session.call_tool("get_play_status", {"wait_seconds": 1, "wait_for": "playing"})
                 assert not play.isError, play
                 assert json.loads(play.content[0].text)["is_playing"] is True

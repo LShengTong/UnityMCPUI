@@ -25,6 +25,43 @@ from unity_mcp.generated.routes import Endpoints, HTTP_METHODS
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_compact_tool_schemas_preserve_validation_and_title_fields(self):
+        from unity_mcp.server import create_server, without_schema_titles
+        schema = {"type": "object", "title": "Record", "required": ["title"],
+            "properties": {"title": {"type": "string", "title": "Title", "enum": ["title"]}},
+            "default": {"title": "title"}}
+        original = copy.deepcopy(schema)
+        compacted = without_schema_titles(schema)
+        self.assertNotIn("title", compacted)
+        self.assertEqual(compacted["properties"]["title"], {"type": "string", "enum": ["title"]})
+        self.assertEqual(compacted["default"], {"title": "title"})
+        self.assertEqual(schema, original)
+
+        async def run():
+            server = create_server()
+            listed = {tool.name: tool for tool in await server.list_tools()}
+            samples = {
+                "create_ui_prefab": {"output_path": "Assets/Test.prefab", "spec": {"name": "Panel",
+                    "children": [{"name": "Label", "kind": "text", "text": "Hello"}]}},
+                "batch_edit_ui_prefab": {"asset_path": "Assets/Test.prefab", "expected_version": "a" * 64,
+                    "operations": [{"action": "delete", "index_path": "0/0"}]},
+                "run_ui_test": {"test_instance_id": "test", "steps": [{"action": "pointer_down"}]},
+            }
+            for name, sample in samples.items():
+                full = server._tool_manager.get_tool(name).parameters
+                compact = listed[name].inputSchema
+                Draft202012Validator.check_schema(compact)
+                variants = [sample, {}]
+                invalid = copy.deepcopy(sample)
+                if name == "create_ui_prefab": invalid["spec"]["children"][0]["kind"] = "unknown"
+                elif name == "batch_edit_ui_prefab": invalid["operations"][0]["action"] = "unknown"
+                else: invalid["steps"][0]["button"] = "unknown"
+                variants.append(invalid)
+                for value, expected in zip(variants, (True, False, False)):
+                    self.assertEqual(Draft202012Validator(full).is_valid(value), expected, name)
+                    self.assertEqual(Draft202012Validator(compact).is_valid(value), expected, name)
+        asyncio.run(run())
+
     def test_pointer_steps_round_trip_and_reject_invalid_input(self):
         from unity_mcp.generated.requests import RunUiTestRequest
         envelope = {"id": "a" * 32, "deadline": 12345, "test_instance_id": "test"}
@@ -311,6 +348,12 @@ class ProtocolTests(unittest.TestCase):
             "border": {"x": 0, "y": 0, "z": 0, "w": 0}, "pixels_per_unit": 100,
             "texture_path": "Assets/a.png", "filter_mode": "Bilinear"}
         return {
+            Endpoints.CREATE_UI_TEST_SCENE: {**common, "scene_path": "Assets/UiTest.unity",
+                "parent_path": "UnityMcpTestCanvas/Content", "prefab_instance_path": "", "saved": True},
+            Endpoints.GAME_VIEW_RESOLUTION: {**common, "group": "Standalone", "selected_index": 1,
+                "actual_width": 720, "actual_height": 1280, "is_playing": False, "can_restore": True,
+                "presets": [{"index": 1, "name": "720x1280", "size_type": "FixedResolution",
+                    "width": 720, "height": 1280, "is_custom": True}]},
             Endpoints.CREATE_TMP_FONT: {**common, "asset_path": "Assets/Font.asset", "guid": "c" * 32, "population_mode": "dynamic", "character_count": 2, "all_characters_present": False, "missing_codepoints": ["U+4E2D"]},
             Endpoints.UPDATE_TMP_FONT_CHARACTERS: {**common, "asset_path": "Assets/Font.asset", "guid": "c" * 32, "population_mode": "static", "character_count": 2, "all_characters_present": True, "missing_codepoints": []},
             Endpoints.CREATE_UI_PREFAB: {**common, "asset_path": "Assets/Test.prefab", "node_count": 1},
@@ -455,6 +498,8 @@ class ProtocolTests(unittest.TestCase):
     @staticmethod
     def request_samples():
         return {
+            Endpoints.GAME_VIEW_RESOLUTION: {"action": "set", "width": 720, "height": 1280},
+            Endpoints.CREATE_UI_TEST_SCENE: {"scene_path": "Assets/UiTest.unity"},
             Endpoints.CREATE_TMP_FONT: {"source_font_path": "Assets/Noto.ttf", "asset_path": "Assets/Font.asset", "characters": "ABC"},
             Endpoints.UPDATE_TMP_FONT_CHARACTERS: {"asset_path": "Assets/Font.asset", "characters": "XYZ"},
             Endpoints.ENTER_PLAY_MODE: {}, Endpoints.EXIT_PLAY_MODE: {},

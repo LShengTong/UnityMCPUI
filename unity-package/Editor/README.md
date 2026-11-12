@@ -141,6 +141,8 @@ UiPrefabBackupStore 将原 Prefab 快照及元数据放在 Library/UnityMcp/Back
 
 `Handlers/TypeHandlers/PlayMode` 放置七个工具对应的 Handler，`Services/PlayMode` 管理会话、隔离场景、运行时查询和测试执行。HTTP 主线程调度队列位于 `Handlers/Base/PlayRequestQueue.cs`，独立于暂停 Play 执行的资产编辑队列，在主线程调用异步工作并逐帧恢复；排队最多 16 项，HTTP 等待 20 秒，测试执行最多 15 秒。队列与 Service 分别自动初始化，Service 不依赖 Handler 队列。后台唤醒位于 `Server/EditorBackgroundLoop.cs`。原有 prefab 编辑仍不能在 Play 中执行。
 
+Edit 模式下可调用 `create_ui_test_scene`（POST `/ui/test-scenes`），传入新场景的 scene_path、可选 prefab_path，以及默认 1920×1080 的 reference_width/reference_height。输出文件夹需已存在。工具保存并附加打开场景，将其设为活动场景，配置 Overlay Canvas、CanvasScaler、GraphicRaycaster、Content、EventSystem/输入模块和背景相机。可选 prefab 以关联实例放入 Content，根需为 RectTransform 且无 Canvas。回执包含 scene_path、parent_path、prefab_instance_path、saved。场景长期保留，已有路径拒绝覆盖。业务位于 Services/TestScene，公共 UiTestSceneUtility 同时用于隔离 Play 场景。
+
 | 方法 | 路径 | 用途 |
 | --- | --- | --- |
 | GET | /editor/play/status | 主线程快照，不入队 |
@@ -174,7 +176,9 @@ run 等待首帧推进后开始。`pointer_move`、`pointer_down`、`pointer_up`
 
 截图等待推进帧后调用 ScreenCapture，临时 PNG 位于 Library/UnityMcp 并按 GUID 路径清理。Game view 不推进或不能截图时返回失败。游戏脚本可以产生自身副作用。Python 校验截图编码和尺寸后以 JSON 和图片附件返回。
 
-screenshot 的 width/height 为可选整数，必须成对设置为 1～2048；两者为 0 保留当前尺寸。Screen.SetResolution 后等待连续两帧尺寸稳定并更新 Canvas，再捕获并核对 PNG。finally 恢复原宽高/窗口模式并最多额外等待 2 秒确认；重载/退出时另有尽力恢复钩子。这里不操作内部 GameView 预设 API，因此不承诺恢复原 Free Aspect 等下拉模式。切换不生效或恢复失败会报告实际尺寸，不静默回退到静态预览。每次仍限一张截图，多尺寸对同一实例分次运行。
+screenshot 指定固定尺寸时，width/height 成对设置为 10～2048；两者为 0 保留当前尺寸。通过 Services/GameView 的预设适配器切换，等待实际尺寸连续两帧稳定后更新 Canvas、截图并核对 PNG。finally 恢复截图前的完整预设（含 Free Aspect），最多额外等待 2 秒确认，重载和退出时另有恢复钩子。每次限一张截图，多尺寸对同一实例分次运行。
+
+POST `/editor/game-view/resolution` 接收 action=query/set/restore。三个 Python 工具分别为 get_game_view_resolution、set_game_view_resolution、restore_game_view_resolution，Edit/Play 共用异步主线程队列。set 使用 width/height 或当前平台组内的 preset_index/preset_group。GameViewSizeAdapter 集中处理内部 API 兼容检查、预设枚举、新增和选择；GameViewResolutionService 管理稳定等待及 SessionState 中的首次选择恢复点，返回业务结果由 Handler 组装 Reply。Play 等待实际屏幕尺寸和帧推进，Edit 等待 Game view 的目标渲染尺寸。新增预设保留到 Unity 偏好设置，退出 Play 尝试恢复原选择。
 
 ## 静态预览和限制
 

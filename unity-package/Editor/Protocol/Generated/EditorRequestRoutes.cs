@@ -27,6 +27,8 @@ namespace UnityMcp.Editor
                 ("POST", "/editor/play/clear", EditorRequestType.ClearTestInstances),
                 ("POST", "/ui/fonts/create", EditorRequestType.CreateTmpFont),
                 ("POST", "/ui/fonts/characters", EditorRequestType.UpdateTmpFontCharacters),
+                ("POST", "/ui/test-scenes", EditorRequestType.CreateUiTestScene),
+                ("POST", "/editor/game-view/resolution", EditorRequestType.GameViewResolution),
         };
 
         public static bool TryResolve(string method, string path, out EditorRequestType type)

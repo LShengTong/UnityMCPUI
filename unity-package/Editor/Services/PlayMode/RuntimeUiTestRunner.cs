@@ -10,9 +10,7 @@ namespace UnityMcp.Editor
 {
     internal static class RuntimeUiTestRunner
     {
-        static bool resolutionChanged;
-        static int previousWidth, previousHeight;
-        static FullScreenMode previousMode;
+        static GameViewResolutionService.Selection previousSelection;
         static RuntimePointerInput activePointer;
         static RuntimeUiTestRunner()
         {
@@ -26,8 +24,11 @@ namespace UnityMcp.Editor
         {
             try { activePointer?.Dispose(); }
             finally { activePointer = null; }
-            if (resolutionChanged) Screen.SetResolution(previousWidth, previousHeight, previousMode);
-            resolutionChanged = false;
+            if (previousSelection != null)
+            {
+                try { GameViewResolutionService.RestoreSelection(previousSelection); previousSelection = null; }
+                catch (Exception error) { Debug.LogWarning("Unity MCP screenshot preset restore: " + error.GetBaseException().Message); }
+            }
         }
         static double Now => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
         static void Check(double deadline, string session)
@@ -55,7 +56,7 @@ namespace UnityMcp.Editor
             PlayModeSession.TestRunning = true;
             try
             {
-                if (resolutionChanged) await RestoreResolution(session);
+                if (previousSelection != null) await RestoreResolution(session);
                 // Start/first-frame initialization must run before invoking callbacks.
                 await NextFrame(deadline, session);
                 for (int i = 0; i < steps.Length; i++)
@@ -177,16 +178,11 @@ namespace UnityMcp.Editor
                 await CaptureCurrent(result, deadline, session, 0, 0);
                 return;
             }
-            previousWidth = Screen.width;
-            previousHeight = Screen.height;
-            if (previousWidth < 1 || previousHeight < 1) throw new Exception("Game view is not initialized; open it before screenshot");
-            previousMode = Screen.fullScreenMode;
-            resolutionChanged = true;
+            previousSelection = GameViewResolutionService.CaptureSelection();
             Exception failure = null;
             try
             {
-                Screen.SetResolution(step.width, step.height, FullScreenMode.Windowed);
-                await WaitResolution(step.width, step.height, Math.Min(deadline, Now + 4), session);
+                await GameViewResolutionService.SetTemporary(step.width, step.height, Math.Min(deadline, Now + 4), previousSelection);
                 Canvas.ForceUpdateCanvases();
                 await NextFrame(deadline, session);
                 await CaptureCurrent(result, deadline, session, step.width, step.height);
@@ -196,7 +192,7 @@ namespace UnityMcp.Editor
             {
                 try
                 {
-                    // Public API restores dimensions/mode, not the original Game View dropdown preset.
+                    // Restore the exact selected preset, including Free Aspect.
                     await RestoreResolution(session);
                 }
                 catch (Exception restoreError)
@@ -209,28 +205,11 @@ namespace UnityMcp.Editor
         }
         static async Task RestoreResolution(string session)
         {
-            Screen.SetResolution(previousWidth, previousHeight, previousMode);
-            await WaitResolution(previousWidth, previousHeight, Now + 2, session);
-            resolutionChanged = false;
-        }
-        static async Task WaitResolution(int width, int height, double deadline, string session)
-        {
-            // Resolution changes take effect at frame end. Confirm two advancing frames at the target size.
-            try
-            {
-                for (int stableFrames = 0; stableFrames < 2;)
-                {
-                    Check(deadline, session);
-                    await NextFrame(deadline, session);
-                    if (Screen.width == width && Screen.height == height) stableFrames++;
-                    else stableFrames = 0;
-                }
-            }
-            catch (Exception error)
-            {
-                throw new Exception("Game view requested " + width + "x" + height
-                    + ", actual " + Screen.width + "x" + Screen.height + ": " + error.Message);
-            }
+            Check(Now + 2, session);
+            var selection = previousSelection;
+            GameViewResolutionService.RestoreSelection(selection);
+            await GameViewResolutionService.WaitAfterRestore(selection, Now + 2);
+            previousSelection = null;
         }
         static async Task CaptureCurrent(UiTestStepResult result, double deadline, string session, int width, int height)
         {

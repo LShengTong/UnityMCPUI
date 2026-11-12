@@ -3279,6 +3279,228 @@
           }
         }
       ]
+    },
+    "CreateUiTestSceneReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "scene_path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "parent_path": {
+          "type": "string",
+          "default": ""
+        },
+        "prefab_instance_path": {
+          "type": "string",
+          "default": ""
+        },
+        "saved": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": true
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "scene_path",
+              "parent_path",
+              "saved"
+            ],
+            "properties": {
+              "scene_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parent_path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "saved": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "GameViewPreset": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "size_type": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "is_custom": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "index",
+        "name",
+        "size_type",
+        "width",
+        "height",
+        "is_custom"
+      ]
+    },
+    "GameViewResolutionReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "group": {
+          "type": "string",
+          "default": ""
+        },
+        "selected_index": {
+          "type": "integer",
+          "default": -1
+        },
+        "actual_width": {
+          "type": "integer",
+          "default": 0
+        },
+        "actual_height": {
+          "type": "integer",
+          "default": 0
+        },
+        "is_playing": {
+          "type": "boolean",
+          "default": false
+        },
+        "can_restore": {
+          "type": "boolean",
+          "default": false
+        },
+        "presets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GameViewPreset"
+          },
+          "default": []
+        }
+      },
+      "required": [
+        "id",
+        "instance_id",
+        "ok"
+      ],
+      "x-response": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "ok": {
+                "const": false
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

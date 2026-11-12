@@ -83,6 +83,8 @@ py -3.12 -m venv .venv
 | `find_ui_assets` | 按条件批量搜索 `ui_prefab`、`sprite`、`tmp_font` |
 | `inspect_ui_assets` | 批量读取资源详情、Prefab 层级和版本、字体已有字形覆盖情况 |
 | `create_ui_prefab` | 创建 RectTransform 根节点的 uGUI Prefab，可引用已有 UI prefab，不覆盖已有资源 |
+| `create_ui_test_scene` | Edit 模式保存并附加打开测试场景，配置 Canvas、EventSystem，可同时放入 UI prefab |
+| `get_game_view_resolution` / `set_game_view_resolution` / `restore_game_view_resolution` | Edit/Play 下查询预设、切换 Game view 尺寸并恢复原预设 |
 | `refresh_assets` | 写入 C# 等资源后请求 Unity 刷新，不代表编译成功 |
 | `get_compilation_status` | 查询 / 等待刷新和编译状态，返回编译错误，重载后自动重连同一项目 |
 | `get_play_status` | 查询 / 等待 Play 状态、会话、帧数及工具创建的测试实例 |
@@ -284,7 +286,9 @@ Play 功能测试可按以下顺序执行：
 
 每次最多 32 步，总执行时间最多 15 秒，单次条件等待最多 10 秒；失败停在首个失败步骤并返回 expected/actual/error/frame_count。最多一张真实 Game 截图，Game view 每边需 ≤2048 像素且帧数必须推进；返回 JSON 加图片附件，不是静态 prefab 预览。游戏暂停时先恢复再测试。
 
-screenshot 可成对指定 width/height（1～2048），省略或两者均为 0 则截取当前尺寸。内部使用公开的 Screen.SetResolution，等待目标尺寸连续两帧稳定并更新布局后截图，校验 PNG 尺寸，最后尝试恢复原宽高和窗口模式（恢复最多额外等待 2 秒）。尺寸切换或恢复无法确认时返回失败，不会缩放旧截图冒充目标分辨率。恢复宽高不等于恢复 Game View 原来的 Free Aspect / 固定分辨率下拉预设。多分辨率验证对同一个 test_instance_id 分别调用，例如 1280×720、1600×1200；游戏仍在运行，两次调用之间不会自动冻结或重置状态。
+screenshot 可成对指定固定 width/height（10～2048），省略或两者均为 0 则截取当前尺寸。Game view 预设切换后等待实际尺寸连续两帧稳定并更新布局，再截图和校验 PNG 尺寸，最后恢复截图前的预设，包括 Free Aspect，最多额外等待 2 秒确认。多分辨率验证对同一个 test_instance_id 分别调用，例如 1280×720、1600×1200。游戏在两次调用之间继续运行。
+
+Edit 和 Play 均可调用 get_game_view_resolution 查询当前预设和实际尺寸，再通过 set_game_view_resolution 指定 width/height（10～2048），或 preset_index 与 preset_group 选择已有预设。不存在的固定尺寸会新增到 Unity 自定义预设。首次切换保存原预设，连续切换共用这个恢复点，测试结束调用 restore_game_view_resolution，退出 Play 时也会尝试恢复。新增的自定义预设会保留。该功能使用 Unity 内部 Editor API，版本不兼容或预设、窗口、平台组变化时返回错误。
 
 4. `clear_test_instances` 只清理工具创建的对象；如果本次进入了 Play，结束后 `exit_play_mode` 并等待 stopped。退出会结束整个游戏会话，不能把它当作只清理一个测试实例。
 

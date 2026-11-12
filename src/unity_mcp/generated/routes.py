@@ -22,6 +22,8 @@ class Endpoints:
     CLEAR_TEST_INSTANCES = '/editor/play/clear'
     CREATE_TMP_FONT = '/ui/fonts/create'
     UPDATE_TMP_FONT_CHARACTERS = '/ui/fonts/characters'
+    CREATE_UI_TEST_SCENE = '/ui/test-scenes'
+    GAME_VIEW_RESOLUTION = '/editor/game-view/resolution'
 
 
 HTTP_METHODS = {
@@ -46,4 +48,6 @@ HTTP_METHODS = {
     Endpoints.CLEAR_TEST_INSTANCES: 'POST',
     Endpoints.CREATE_TMP_FONT: 'POST',
     Endpoints.UPDATE_TMP_FONT_CHARACTERS: 'POST',
+    Endpoints.CREATE_UI_TEST_SCENE: 'POST',
+    Endpoints.GAME_VIEW_RESOLUTION: 'POST',
 }

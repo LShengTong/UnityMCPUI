@@ -626,6 +626,51 @@ class UpdateTmpFontCharactersReply(BaseModel):
         return _check_conditions(self, [{'if': {'properties': {'ok': {'const': True}}, 'required': ['ok']}, 'then': {'required': ['asset_path', 'guid', 'population_mode', 'character_count', 'all_characters_present', 'missing_codepoints'], 'properties': {'asset_path': {'type': 'string', 'minLength': 1}, 'guid': {'type': 'string', 'minLength': 1}, 'population_mode': {'type': 'string', 'enum': ['static', 'dynamic']}}}}, {'if': {'properties': {'ok': {'const': False}}, 'required': ['ok']}, 'then': {'required': ['error'], 'properties': {'error': {'type': 'string', 'minLength': 1}}}}])
 
 
+class CreateUiTestSceneReply(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False, strict=True)
+    id: str
+    instance_id: str = Field(min_length=1)
+    ok: bool
+    error: str | None = Field(default=None)
+    scene_path: str | None = Field(default=None)
+    parent_path: str = Field(default='')
+    prefab_instance_path: str = Field(default='')
+    saved: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def _validate_conditions(self):
+        return _check_conditions(self, [{'if': {'properties': {'ok': {'const': True}}, 'required': ['ok']}, 'then': {'required': ['scene_path', 'parent_path', 'saved'], 'properties': {'scene_path': {'type': 'string', 'minLength': 1}, 'parent_path': {'type': 'string', 'minLength': 1}, 'saved': {'const': True}}}}, {'if': {'properties': {'ok': {'const': False}}, 'required': ['ok']}, 'then': {'required': ['error'], 'properties': {'error': {'type': 'string', 'minLength': 1}}}}])
+
+
+class GameViewPreset(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False, strict=True)
+    index: int
+    name: str
+    size_type: str
+    width: int
+    height: int
+    is_custom: bool
+
+
+class GameViewResolutionReply(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False, strict=True)
+    id: str
+    instance_id: str = Field(min_length=1)
+    ok: bool
+    error: str | None = Field(default=None)
+    group: str = Field(default='')
+    selected_index: int = Field(default=-1)
+    actual_width: int = Field(default=0)
+    actual_height: int = Field(default=0)
+    is_playing: bool = Field(default=False)
+    can_restore: bool = Field(default=False)
+    presets: list[GameViewPreset] = Field(default_factory=lambda: [])
+
+    @model_validator(mode="after")
+    def _validate_conditions(self):
+        return _check_conditions(self, [{'if': {'properties': {'ok': {'const': False}}, 'required': ['ok']}, 'then': {'required': ['error'], 'properties': {'error': {'type': 'string', 'minLength': 1}}}}])
+
+
 Vector2Reply.model_rebuild()
 Vector3Reply.model_rebuild()
 Vector4Reply.model_rebuild()
@@ -672,6 +717,9 @@ ClearTestInstancesReply.model_rebuild()
 RunUiTestReply.model_rebuild()
 CreateTmpFontReply.model_rebuild()
 UpdateTmpFontCharactersReply.model_rebuild()
+CreateUiTestSceneReply.model_rebuild()
+GameViewPreset.model_rebuild()
+GameViewResolutionReply.model_rebuild()
 
 RESPONSE_MODELS = {
     Endpoints.HEALTH: HealthReply,
@@ -695,4 +743,6 @@ RESPONSE_MODELS = {
     Endpoints.CLEAR_TEST_INSTANCES: ClearTestInstancesReply,
     Endpoints.CREATE_TMP_FONT: CreateTmpFontReply,
     Endpoints.UPDATE_TMP_FONT_CHARACTERS: UpdateTmpFontCharactersReply,
+    Endpoints.CREATE_UI_TEST_SCENE: CreateUiTestSceneReply,
+    Endpoints.GAME_VIEW_RESOLUTION: GameViewResolutionReply,
 }
